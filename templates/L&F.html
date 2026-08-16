@@ -1,0 +1,2848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Fond & Found — Campus Lost & Found</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#1C2B33;
+  --ink-soft:#445560;
+  --paper:#E7DFCB;
+  --paper-dark:#DACFAF;
+  --card:#FBF8F1;
+  --card-edge:#D8CDA9;
+  --stamp-red:#B23A48;
+  --stamp-red-dark:#8C2A36;
+  --found-green:#3F6B54;
+  --found-green-dark:#2E5140;
+  --gold:#A8862F;
+  --shadow:0 10px 30px rgba(28,43,51,.16);
+  --shadow-sm:0 4px 12px rgba(28,43,51,.12);
+
+  --font-display:'Special Elite','Courier New',monospace;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-body:'Public Sans',sans-serif;
+}
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+html{
+  scroll-behavior:smooth;
+}
+
+body{
+  font-family:var(--font-body);
+  color:var(--ink);
+
+  background:
+    radial-gradient(
+      circle at 1px 1px,
+      rgba(28,43,51,.06) 1px,
+      transparent 0
+    ) 0 0/22px 22px,
+    var(--paper);
+
+  min-height:100vh;
+  line-height:1.5;
+}
+
+button{
+  font-family:inherit;
+  cursor:pointer;
+}
+
+.wrap{
+  max-width:1180px;
+  margin:auto;
+  padding:0 28px;
+}
+
+/* HEADER */
+
+header.site{
+  padding:28px 0 18px;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.brand-mark{
+  width:44px;
+  height:44px;
+
+  border-radius:50%;
+
+  background:var(--ink);
+  color:var(--paper);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-family:var(--font-display);
+  font-size:18px;
+
+  transform:rotate(-8deg);
+
+  box-shadow:var(--shadow-sm);
+}
+
+.brand h1{
+  font-family:var(--font-display);
+  font-size:22px;
+}
+
+.brand span{
+  display:block;
+
+  font-family:var(--font-mono);
+  font-size:11px;
+
+  color:var(--ink-soft);
+
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+}
+
+.board-groove{
+  height:10px;
+
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--paper-dark) 0 18px,
+      transparent 18px 36px
+    );
+
+  opacity:.6;
+}
+
+/* BUTTONS */
+
+.btn{
+  border:none;
+  border-radius:4px;
+
+  padding:12px 20px;
+
+  font-weight:700;
+  font-size:14px;
+
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+
+  transition:.15s ease;
+}
+
+.btn-primary{
+  background:var(--ink);
+  color:var(--paper);
+  box-shadow:var(--shadow-sm);
+}
+
+.btn-primary:hover{
+  transform:translateY(-2px);
+  box-shadow:var(--shadow);
+}
+
+.btn-ghost{
+  background:transparent;
+  color:var(--ink);
+
+  border:1.5px solid var(--ink);
+}
+
+.btn-ghost:hover{
+  background:rgba(28,43,51,.06);
+}
+
+/* HERO */
+
+.hero{
+  position:relative;
+  padding:46px 0 64px;
+}
+
+.hero-inner{
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+
+  gap:40px;
+  align-items:center;
+}
+
+.hero h2{
+  font-family:var(--font-display);
+
+  font-size:clamp(34px,4.4vw,54px);
+
+  line-height:1.08;
+}
+
+.hero h2 em{
+  font-style:normal;
+  color:var(--stamp-red);
+}
+
+.hero p.lede{
+  margin-top:18px;
+
+  max-width:46ch;
+
+  color:var(--ink-soft);
+  font-size:16px;
+}
+
+.hero-cta{
+  margin-top:28px;
+
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.stat-row{
+  margin-top:34px;
+
+  display:flex;
+  gap:28px;
+  flex-wrap:wrap;
+}
+
+.stat b{
+  font-family:var(--font-mono);
+  font-size:26px;
+  display:block;
+}
+
+.stat span{
+  font-size:11px;
+
+  text-transform:uppercase;
+  letter-spacing:1.2px;
+
+  color:var(--ink-soft);
+}
+
+/* PIN BOARD */
+
+.pin-stage{
+  position:relative;
+  height:360px;
+}
+
+.pin-tag{
+  position:absolute;
+
+  width:200px;
+
+  background:var(--card);
+
+  border-radius:6px;
+
+  box-shadow:var(--shadow);
+
+  padding:16px 16px 20px;
+
+  animation:pinDrop .7s forwards;
+}
+
+.pin-tag::before{
+  content:"";
+
+  position:absolute;
+
+  top:-9px;
+  left:50%;
+
+  transform:translateX(-50%);
+
+  width:14px;
+  height:14px;
+
+  border-radius:50%;
+
+  background:var(--gold);
+
+  box-shadow:0 3px 5px rgba(0,0,0,.35);
+}
+
+.pin-tag .tag-status{
+  font-family:var(--font-mono);
+
+  font-size:10px;
+  font-weight:600;
+
+  letter-spacing:1px;
+
+  padding:3px 8px;
+
+  border-radius:20px;
+
+  text-transform:uppercase;
+}
+
+.pin-tag.lost .tag-status{
+  background:rgba(178,58,72,.12);
+  color:var(--stamp-red);
+}
+
+.pin-tag.found .tag-status{
+  background:rgba(63,107,84,.12);
+  color:var(--found-green);
+}
+
+.pin-tag h4{
+  margin-top:10px;
+}
+
+.pin-tag p{
+  margin-top:4px;
+
+  font-size:12px;
+
+  color:var(--ink-soft);
+}
+
+.pin-tag:nth-child(1){
+  left:0;
+  top:20px;
+  transform:rotate(-7deg);
+}
+
+.pin-tag:nth-child(2){
+  left:150px;
+  top:80px;
+  transform:rotate(4deg);
+}
+
+.pin-tag:nth-child(3){
+  left:60px;
+  top:190px;
+  transform:rotate(-3deg);
+}
+
+@keyframes pinDrop{
+  from{
+    opacity:0;
+    transform:translateY(-26px);
+  }
+
+  to{
+    opacity:1;
+  }
+}
+
+/* CONTROLS */
+
+.controls{
+  background:var(--card);
+
+  border-radius:6px;
+
+  box-shadow:var(--shadow-sm);
+
+  padding:18px 20px;
+
+  display:flex;
+  gap:14px;
+
+  flex-wrap:wrap;
+  align-items:center;
+
+  margin-bottom:26px;
+
+  border:1px dashed var(--card-edge);
+}
+
+.search-box{
+  flex:1 1 260px;
+
+  display:flex;
+  align-items:center;
+
+  gap:10px;
+
+  border-bottom:2px solid var(--ink);
+
+  padding:6px 2px;
+}
+
+.search-box input{
+  border:none;
+  outline:none;
+
+  background:transparent;
+
+  font-size:15px;
+
+  width:100%;
+
+  color:var(--ink);
+}
+
+.pill-group{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.pill{
+  border:1.5px solid var(--card-edge);
+
+  background:transparent;
+
+  border-radius:20px;
+
+  padding:8px 14px;
+
+  font-size:13px;
+  font-weight:600;
+
+  color:var(--ink-soft);
+}
+
+.pill.active[data-v="all"]{
+  background:var(--ink);
+  color:var(--paper);
+}
+
+.pill.active[data-v="lost"]{
+  background:var(--stamp-red);
+  color:white;
+}
+
+.pill.active[data-v="found"]{
+  background:var(--found-green);
+  color:white;
+}
+
+select{
+  border:1.5px solid var(--card-edge);
+
+  border-radius:20px;
+
+  padding:8px 14px;
+
+  font-size:13px;
+  font-weight:600;
+
+  color:var(--ink-soft);
+
+  background:var(--card);
+}
+
+/* BOARD */
+
+section.board{
+  padding-bottom:80px;
+}
+
+.section-heading{
+  display:flex;
+
+  align-items:baseline;
+  justify-content:space-between;
+
+  margin-bottom:16px;
+}
+
+.section-heading h3{
+  font-family:var(--font-display);
+  font-size:20px;
+}
+
+.section-heading span{
+  font-family:var(--font-mono);
+
+  font-size:12px;
+
+  color:var(--ink-soft);
+}
+
+.grid{
+  display:grid;
+
+  grid-template-columns:
+    repeat(auto-fill,minmax(260px,1fr));
+
+  gap:22px;
+}
+
+/* CARDS */
+
+.tag-card{
+  position:relative;
+
+  background:var(--card);
+
+  border-radius:6px;
+
+  box-shadow:var(--shadow-sm);
+
+  padding:18px 18px 18px 26px;
+
+  transition:.25s ease;
+
+  cursor:pointer;
+}
+
+.tag-card:hover{
+  transform:translateY(-6px);
+  box-shadow:var(--shadow);
+}
+
+.tag-card::before{
+  content:"";
+
+  position:absolute;
+
+  left:0;
+  top:0;
+  bottom:0;
+
+  width:14px;
+
+  background-image:
+    radial-gradient(
+      circle at 0 0,
+      transparent 6px,
+      var(--paper) 6.5px
+    );
+
+  background-size:14px 16px;
+}
+
+.stub-hole{
+  position:absolute;
+
+  left:0;
+  top:14px;
+
+  width:10px;
+  height:10px;
+
+  border-radius:50%;
+
+  background:var(--paper);
+
+  box-shadow:
+    inset 0 0 0 1.5px var(--card-edge);
+}
+
+.tag-top{
+  display:flex;
+
+  justify-content:space-between;
+  align-items:flex-start;
+
+  gap:10px;
+}
+
+.status-chip{
+  font-family:var(--font-mono);
+
+  font-size:10px;
+  font-weight:700;
+
+  letter-spacing:1px;
+
+  padding:4px 9px;
+
+  border-radius:20px;
+
+  text-transform:uppercase;
+}
+
+.status-chip.lost{
+  background:rgba(178,58,72,.12);
+  color:var(--stamp-red);
+}
+
+.status-chip.found{
+  background:rgba(63,107,84,.12);
+  color:var(--found-green);
+}
+
+.status-chip.claimed{
+  background:rgba(28,43,51,.1);
+  color:var(--ink-soft);
+  text-decoration:line-through;
+}
+
+.case-no{
+  font-family:var(--font-mono);
+
+  font-size:11px;
+
+  color:#a8977e;
+}
+
+.tag-card h4{
+  margin-top:12px;
+  font-size:16px;
+}
+
+.tag-card p.desc{
+  margin-top:6px;
+
+  font-size:13px;
+
+  color:var(--ink-soft);
+
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp:2;
+
+  overflow:hidden;
+}
+
+.tag-meta{
+  margin-top:14px;
+
+  display:flex;
+
+  flex-wrap:wrap;
+
+  gap:10px;
+
+  font-size:12px;
+
+  color:var(--ink-soft);
+
+  font-family:var(--font-mono);
+}
+
+/* EMPTY */
+
+.empty-state{
+  grid-column:1/-1;
+
+  text-align:center;
+
+  padding:60px 20px;
+
+  color:var(--ink-soft);
+}
+
+.empty-state .stamp{
+  display:inline-block;
+
+  font-family:var(--font-display);
+
+  border:3px solid var(--found-green);
+
+  color:var(--found-green);
+
+  padding:8px 18px;
+
+  transform:rotate(-6deg);
+
+  border-radius:6px;
+
+  font-size:14px;
+
+  letter-spacing:2px;
+
+  margin-bottom:16px;
+}
+
+/* MODAL */
+
+.overlay{
+  position:fixed;
+
+  inset:0;
+
+  background:rgba(28,43,51,.55);
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  padding:20px;
+
+  z-index:100;
+
+  opacity:0;
+  pointer-events:none;
+
+  transition:.2s;
+}
+
+.overlay.open{
+  opacity:1;
+  pointer-events:auto;
+}
+
+.modal{
+  background:var(--card);
+
+  width:min(560px,100%);
+
+  max-height:88vh;
+
+  overflow-y:auto;
+
+  border-radius:10px;
+
+  box-shadow:0 30px 60px rgba(0,0,0,.35);
+
+  padding:30px;
+
+  position:relative;
+}
+
+.modal-close{
+  position:absolute;
+
+  top:16px;
+  right:16px;
+
+  width:34px;
+  height:34px;
+
+  border-radius:50%;
+
+  border:1.5px solid var(--card-edge);
+
+  background:transparent;
+
+  font-size:16px;
+}
+
+.modal h3{
+  font-family:var(--font-display);
+
+  font-size:22px;
+
+  margin-bottom:4px;
+}
+
+.modal .sub{
+  font-size:13px;
+
+  color:var(--ink-soft);
+
+  margin-bottom:22px;
+}
+
+/* FORMS */
+
+.form-row{
+  margin-bottom:16px;
+}
+
+.form-row label{
+  display:block;
+
+  font-size:12px;
+  font-weight:700;
+
+  letter-spacing:.6px;
+
+  text-transform:uppercase;
+
+  color:var(--ink-soft);
+
+  margin-bottom:6px;
+}
+
+.form-row input,
+.form-row select,
+.form-row textarea{
+  width:100%;
+
+  padding:11px 12px;
+
+  font-size:14px;
+
+  border:1.5px solid var(--card-edge);
+
+  border-radius:6px;
+
+  background:white;
+
+  color:var(--ink);
+}
+
+.form-row textarea{
+  resize:vertical;
+
+  min-height:80px;
+}
+
+.two-col{
+  display:grid;
+
+  grid-template-columns:1fr 1fr;
+
+  gap:14px;
+}
+
+.type-toggle{
+  display:flex;
+
+  gap:10px;
+
+  margin-bottom:18px;
+}
+
+.type-toggle button{
+  flex:1;
+
+  padding:12px;
+
+  border-radius:6px;
+
+  border:1.5px solid var(--card-edge);
+
+  background:transparent;
+
+  font-weight:700;
+}
+
+.type-toggle button.active[data-v="lost"]{
+  background:var(--stamp-red);
+  color:white;
+}
+
+.type-toggle button.active[data-v="found"]{
+  background:var(--found-green);
+  color:white;
+}
+
+.form-actions{
+  display:flex;
+
+  justify-content:flex-end;
+
+  gap:10px;
+
+  margin-top:22px;
+}
+
+.detail-status{
+  margin-bottom:14px;
+}
+
+.detail-desc{
+  margin:14px 0;
+
+  color:var(--ink-soft);
+
+  font-size:14px;
+}
+
+.detail-grid{
+  display:grid;
+
+  grid-template-columns:1fr 1fr;
+
+  gap:12px;
+
+  font-size:13px;
+
+  margin-bottom:18px;
+}
+
+.detail-grid div b{
+  display:block;
+
+  font-family:var(--font-mono);
+
+  font-size:10px;
+
+  text-transform:uppercase;
+
+  color:#a8977e;
+
+  margin-bottom:3px;
+}
+
+/* TOAST */
+
+#toastStack{
+  position:fixed;
+
+  bottom:22px;
+  right:22px;
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:10px;
+
+  z-index:200;
+}
+
+.toast{
+  background:var(--ink);
+
+  color:var(--paper);
+
+  padding:13px 18px;
+
+  border-radius:6px;
+
+  font-size:13px;
+
+  box-shadow:var(--shadow);
+
+  min-width:240px;
+}
+
+.toast.error{
+  background:var(--stamp-red-dark);
+}
+
+.toast.success{
+  background:var(--found-green-dark);
+}
+
+/* FOOTER */
+
+footer{
+  padding:30px 0 50px;
+
+  text-align:center;
+
+  color:var(--ink-soft);
+
+  font-size:12px;
+
+  font-family:var(--font-mono);
+}
+
+/* RESPONSIVE */
+
+@media(max-width:860px){
+
+  .hero-inner{
+    grid-template-columns:1fr;
+  }
+
+  .pin-stage{
+    display:none;
+  }
+
+  .two-col{
+    grid-template-columns:1fr;
+  }
+
+  .detail-grid{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="site wrap">
+
+  <div class="brand">
+
+    <div class="brand-mark">
+      F&amp;F
+    </div>
+
+    <div>
+
+      <h1>Fond &amp; Found</h1>
+
+      <span>
+        Case Board · Est. Today
+      </span>
+
+    </div>
+
+  </div>
+
+  <button
+    class="btn btn-primary"
+    id="openReportBtn"
+  >
+    + File a new tag
+  </button>
+
+</header>
+
+<div class="board-groove"></div>
+
+
+<!-- HERO -->
+
+<section class="hero wrap">
+
+  <div class="hero-inner">
+
+    <div>
+
+      <h2>
+        Lost something?<br>
+        Someone probably <em>found</em> it.
+      </h2>
+
+      <p class="lede">
+        Every misplaced umbrella, ID card and water bottle on campus
+        gets a claim tag here. Search the board, or pin up your own
+        in under a minute.
+      </p>
+
+      <div class="hero-cta">
+
+        <button
+          class="btn btn-primary"
+          id="heroReportLost"
+        >
+          Report something lost
+        </button>
+
+        <button
+          class="btn btn-ghost"
+          id="heroReportFound"
+        >
+          I found something
+        </button>
+
+      </div>
+
+
+      <div class="stat-row">
+
+        <div class="stat">
+          <b id="statTotal">0</b>
+          <span>Open cases</span>
+        </div>
+
+        <div class="stat">
+          <b id="statFound">0</b>
+          <span>Marked found</span>
+        </div>
+
+        <div class="stat">
+          <b id="statClaimed">0</b>
+          <span>Reunited</span>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="pin-stage">
+
+      <div class="pin-tag lost">
+
+        <span class="tag-status">
+          Lost
+        </span>
+
+        <h4>
+          Blue Backpack
+        </h4>
+
+        <p>
+          Library, 2nd floor
+        </p>
+
+      </div>
+
+
+      <div class="pin-tag found">
+
+        <span class="tag-status">
+          Found
+        </span>
+
+        <h4>
+          Silver Keys
+        </h4>
+
+        <p>
+          Cafeteria table 4
+        </p>
+
+      </div>
+
+
+      <div class="pin-tag lost">
+
+        <span class="tag-status">
+          Lost
+        </span>
+
+        <h4>
+          Student ID Card
+        </h4>
+
+        <p>
+          Near Block C
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- MAIN BOARD -->
+
+<main class="wrap board">
+
+  <div class="controls">
+
+    <div class="search-box">
+
+      <span>🔎</span>
+
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search by item, place, or case number..."
+      >
+
+    </div>
+
+
+    <div
+      class="pill-group"
+      id="statusPills"
+    >
+
+      <button
+        class="pill active"
+        data-v="all"
+      >
+        All
+      </button>
+
+      <button
+        class="pill"
+        data-v="lost"
+      >
+        Lost
+      </button>
+
+      <button
+        class="pill"
+        data-v="found"
+      >
+        Found
+      </button>
+
+    </div>
+
+
+    <select id="categoryFilter">
+
+      <option value="">
+        All categories
+      </option>
+
+      <option value="electronics">
+        Electronics
+      </option>
+
+      <option value="accessories">
+        Accessories
+      </option>
+
+      <option value="documents">
+        Documents / IDs
+      </option>
+
+      <option value="bags">
+        Bags
+      </option>
+
+      <option value="clothing">
+        Clothing
+      </option>
+
+      <option value="other">
+        Other
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <div class="section-heading">
+
+    <h3>
+      Current board
+    </h3>
+
+    <span id="resultCount">
+      loading...
+    </span>
+
+  </div>
+
+
+  <div
+    class="grid"
+    id="itemGrid"
+  ></div>
+
+</main>
+
+
+<footer>
+  FOND &amp; FOUND — connected to your Flask API · build with care
+</footer>
+
+
+<!-- REPORT MODAL -->
+
+<div
+  class="overlay"
+  id="reportOverlay"
+>
+
+  <div class="modal">
+
+    <button
+      class="modal-close"
+      data-close
+    >
+      ×
+    </button>
+
+    <h3>
+      File a new tag
+    </h3>
+
+    <p class="sub">
+      A couple of details help the right person find this fast.
+    </p>
+
+
+    <div
+      class="type-toggle"
+      id="typeToggle"
+    >
+
+      <button
+        type="button"
+        class="active"
+        data-v="lost"
+      >
+        🔴 I lost this
+      </button>
+
+      <button
+        type="button"
+        data-v="found"
+      >
+        🟢 I found this
+      </button>
+
+    </div>
+
+
+    <form id="reportForm">
+
+      <div class="form-row">
+
+        <label>
+          Item title
+        </label>
+
+        <input
+          name="title"
+          required
+          placeholder="e.g. Navy blue backpack"
+        >
+
+      </div>
+
+
+      <div class="form-row">
+
+        <label>
+          Description
+        </label>
+
+        <textarea
+          name="description"
+          required
+          placeholder="Color, brand, stickers, distinguishing details..."
+        ></textarea>
+
+      </div>
+
+
+      <div class="two-col">
+
+        <div class="form-row">
+
+          <label>
+            Category
+          </label>
+
+          <select name="category">
+
+            <option value="electronics">
+              Electronics
+            </option>
+
+            <option value="accessories">
+              Accessories
+            </option>
+
+            <option value="documents">
+              Documents / IDs
+            </option>
+
+            <option value="bags">
+              Bags
+            </option>
+
+            <option value="clothing">
+              Clothing
+            </option>
+
+            <option value="other">
+              Other
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label>
+            Location
+          </label>
+
+          <input
+            name="location"
+            required
+            placeholder="e.g. Library, 2nd floor"
+          >
+
+        </div>
+
+      </div>
+
+
+      <div class="two-col">
+
+        <div class="form-row">
+
+          <label>
+            Date
+          </label>
+
+          <input
+            name="date"
+            type="date"
+          >
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label>
+            Contact
+          </label>
+
+          <input
+            name="contact"
+            required
+            placeholder="Email or phone"
+          >
+
+        </div>
+
+      </div>
+
+
+      <div class="form-actions">
+
+        <button
+          type="button"
+          class="btn btn-ghost"
+          data-close
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+          id="submitReportBtn"
+        >
+          Pin it to the board
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- DETAIL MODAL -->
+
+<div
+  class="overlay"
+  id="detailOverlay"
+>
+
+  <div
+    class="modal"
+    id="detailModalBody"
+  >
+
+    <button
+      class="modal-close"
+      data-close
+    >
+      ×
+    </button>
+
+  </div>
+
+</div>
+
+
+<div id="toastStack"></div>
+
+
+<script>
+
+/* =========================================================
+   API CONFIGURATION
+   ========================================================= */
+
+const CONFIG = {
+
+  /*
+    Your Flask API.
+
+    Your API already responded with:
+
+    {
+      "count": 0,
+      "items": [],
+      "success": true
+    }
+
+    So this URL is working.
+  */
+
+  API_BASE: "http://127.0.0.1:5000/api"
+
+};
+
+
+/* =========================================================
+   API LAYER
+   ========================================================= */
+
+const Api = {
+
+  async listItems({
+    status = "",
+    category = "",
+    q = ""
+  } = {}) {
+
+    const params = new URLSearchParams();
+
+    if(status)
+      params.set("status", status);
+
+    if(category)
+      params.set("category", category);
+
+    if(q)
+      params.set("q", q);
+
+
+    const url =
+      `${CONFIG.API_BASE}/items?${params.toString()}`;
+
+
+    const response =
+      await fetch(url);
+
+
+    if(!response.ok){
+
+      throw new Error(
+        `API error: ${response.status}`
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    /*
+      IMPORTANT FIX:
+
+      Your Flask API returns:
+
+      {
+        success: true,
+        count: 0,
+        items: []
+      }
+
+      NOT just:
+
+      []
+    */
+
+    if(Array.isArray(data)){
+      return data;
+    }
+
+
+    if(data && Array.isArray(data.items)){
+      return data.items;
+    }
+
+
+    throw new Error(
+      "API returned an invalid items format."
+    );
+
+  },
+
+
+  async getItem(id){
+
+    const response =
+      await fetch(
+        `${CONFIG.API_BASE}/items/${id}`
+      );
+
+
+    if(!response.ok){
+
+      throw new Error(
+        `Item not found (${response.status})`
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    /*
+      Some APIs return:
+
+      { item: {...} }
+
+      Others return:
+
+      {...}
+    */
+
+    if(data.item){
+      return data.item;
+    }
+
+    return data;
+
+  },
+
+
+  async createItem(payload){
+
+    const response =
+      await fetch(
+        `${CONFIG.API_BASE}/items`,
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+
+    const data =
+      await response.json()
+        .catch(() => ({}));
+
+
+    if(!response.ok){
+
+      throw new Error(
+        data.message ||
+        data.error ||
+        `Failed to create item (${response.status})`
+      );
+
+    }
+
+
+    return data;
+
+  },
+
+
+  async claimItem(id,payload){
+
+    const response =
+      await fetch(
+        `${CONFIG.API_BASE}/items/${id}/claim`,
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+
+    const data =
+      await response.json()
+        .catch(() => ({}));
+
+
+    if(!response.ok){
+
+      throw new Error(
+        data.message ||
+        data.error ||
+        `Failed to claim item (${response.status})`
+      );
+
+    }
+
+
+    return data;
+
+  }
+
+};
+
+
+/* =========================================================
+   STATE
+   ========================================================= */
+
+const state = {
+
+  status:"all",
+
+  category:"",
+
+  query:"",
+
+  items:[]
+
+};
+
+
+/* =========================================================
+   DOM
+   ========================================================= */
+
+const itemGrid =
+  document.getElementById("itemGrid");
+
+const resultCount =
+  document.getElementById("resultCount");
+
+const searchInput =
+  document.getElementById("searchInput");
+
+const categoryFilter =
+  document.getElementById("categoryFilter");
+
+const statusPills =
+  document.getElementById("statusPills");
+
+const toastStack =
+  document.getElementById("toastStack");
+
+const reportOverlay =
+  document.getElementById("reportOverlay");
+
+const detailOverlay =
+  document.getElementById("detailOverlay");
+
+const detailModalBody =
+  document.getElementById("detailModalBody");
+
+const reportForm =
+  document.getElementById("reportForm");
+
+const typeToggle =
+  document.getElementById("typeToggle");
+
+let currentReportType =
+  "lost";
+
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+function toast(message,kind=""){
+
+  const element =
+    document.createElement("div");
+
+  element.className =
+    `toast ${kind}`;
+
+  element.textContent =
+    message;
+
+  toastStack.appendChild(element);
+
+
+  setTimeout(
+    () => element.remove(),
+    4000
+  );
+
+}
+
+
+/* =========================================================
+   HTML ESCAPE
+   ========================================================= */
+
+function escapeHtml(value){
+
+  const div =
+    document.createElement("div");
+
+  div.textContent =
+    value ?? "";
+
+  return div.innerHTML;
+
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+function statusLabel(status){
+
+  if(status === "lost")
+    return "Lost";
+
+  if(status === "found")
+    return "Found";
+
+  if(status === "claimed")
+    return "Claimed";
+
+  return status || "Unknown";
+
+}
+
+
+/* =========================================================
+   DATE
+   ========================================================= */
+
+function formatDate(date){
+
+  if(!date)
+    return "—";
+
+  const d =
+    new Date(date);
+
+  if(isNaN(d.getTime()))
+    return date;
+
+  return d.toLocaleDateString(
+    undefined,
+    {
+      month:"short",
+      day:"numeric",
+      year:"numeric"
+    }
+  );
+
+}
+
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+function showLoading(){
+
+  itemGrid.innerHTML = `
+
+    <div class="tag-card">
+      Loading board...
+    </div>
+
+    <div class="tag-card">
+      Connecting to API...
+    </div>
+
+    <div class="tag-card">
+      Please wait...
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   RENDER BOARD
+   ========================================================= */
+
+function renderGrid(items){
+
+  if(!items.length){
+
+    itemGrid.innerHTML = `
+
+      <div class="empty-state">
+
+        <div class="stamp">
+          BOARD IS CLEAR
+        </div>
+
+        <p>
+          No lost or found items have been reported yet.
+        </p>
+
+        <br>
+
+        <button
+          class="btn btn-primary"
+          onclick="openReport('lost')"
+        >
+          + Report an item
+        </button>
+
+      </div>
+
+    `;
+
+    resultCount.textContent =
+      "0 results";
+
+    return;
+
+  }
+
+
+  resultCount.textContent =
+    `${items.length} result${items.length === 1 ? "" : "s"}`;
+
+
+  itemGrid.innerHTML =
+    items.map(
+      item => `
+
+      <article
+        class="tag-card"
+        tabindex="0"
+        role="button"
+        data-id="${escapeHtml(item.id)}"
+      >
+
+        <span class="stub-hole"></span>
+
+        <div class="tag-top">
+
+          <span
+            class="status-chip ${escapeHtml(item.status)}"
+          >
+            ${statusLabel(item.status)}
+          </span>
+
+          <span class="case-no">
+            ${escapeHtml(
+              item.case_no ||
+              "#" + item.id
+            )}
+          </span>
+
+        </div>
+
+
+        <h4>
+          ${escapeHtml(item.title)}
+        </h4>
+
+
+        <p class="desc">
+          ${escapeHtml(
+            item.description || ""
+          )}
+        </p>
+
+
+        <div class="tag-meta">
+
+          <span>
+            📍
+            ${escapeHtml(
+              item.location || "—"
+            )}
+          </span>
+
+          <span>
+            🗓
+            ${formatDate(item.date)}
+          </span>
+
+        </div>
+
+      </article>
+
+    `
+    ).join("");
+
+
+  itemGrid
+    .querySelectorAll(".tag-card")
+    .forEach(card => {
+
+      card.addEventListener(
+        "click",
+        () =>
+          openDetail(
+            card.dataset.id
+          )
+      );
+
+
+      card.addEventListener(
+        "keypress",
+        event => {
+
+          if(event.key === "Enter"){
+
+            openDetail(
+              card.dataset.id
+            );
+
+          }
+
+        }
+      );
+
+    });
+
+}
+
+
+/* =========================================================
+   STATS
+   ========================================================= */
+
+function updateStats(items){
+
+  const total =
+    items.filter(
+      item =>
+        item.status !== "claimed"
+    ).length;
+
+
+  const found =
+    items.filter(
+      item =>
+        item.status === "found"
+    ).length;
+
+
+  const claimed =
+    items.filter(
+      item =>
+        item.status === "claimed"
+    ).length;
+
+
+  document.getElementById(
+    "statTotal"
+  ).textContent = total;
+
+
+  document.getElementById(
+    "statFound"
+  ).textContent = found;
+
+
+  document.getElementById(
+    "statClaimed"
+  ).textContent = claimed;
+
+}
+
+
+/* =========================================================
+   LOAD ITEMS
+   ========================================================= */
+
+async function loadItems(){
+
+  showLoading();
+
+  try{
+
+    const items =
+      await Api.listItems({
+
+        status:
+          state.status === "all"
+            ? ""
+            : state.status,
+
+        category:
+          state.category,
+
+        q:
+          state.query
+
+      });
+
+
+    state.items =
+      Array.isArray(items)
+        ? items
+        : [];
+
+
+    renderGrid(
+      state.items
+    );
+
+
+    updateStats(
+      state.items
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "API ERROR:",
+      error
+    );
+
+
+    itemGrid.innerHTML = `
+
+      <div class="empty-state">
+
+        <div
+          class="stamp"
+          style="
+            border-color:var(--stamp-red);
+            color:var(--stamp-red);
+          "
+        >
+          API ERROR
+        </div>
+
+        <p>
+          Could not connect to the Flask API.
+        </p>
+
+        <br>
+
+        <small>
+          ${escapeHtml(
+            error.message
+          )}
+        </small>
+
+      </div>
+
+    `;
+
+
+    resultCount.textContent =
+      "API connection failed";
+
+
+    toast(
+      "Could not connect to Flask API.",
+      "error"
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   FILTERS
+   ========================================================= */
+
+statusPills.addEventListener(
+  "click",
+  event => {
+
+    const button =
+      event.target.closest(".pill");
+
+    if(!button)
+      return;
+
+
+    statusPills
+      .querySelectorAll(".pill")
+      .forEach(
+        pill =>
+          pill.classList.remove(
+            "active"
+          )
+      );
+
+
+    button.classList.add(
+      "active"
+    );
+
+
+    state.status =
+      button.dataset.v;
+
+
+    loadItems();
+
+  }
+);
+
+
+categoryFilter.addEventListener(
+  "change",
+  () => {
+
+    state.category =
+      categoryFilter.value;
+
+    loadItems();
+
+  }
+);
+
+
+let searchTimer;
+
+searchInput.addEventListener(
+  "input",
+  () => {
+
+    clearTimeout(
+      searchTimer
+    );
+
+
+    searchTimer =
+      setTimeout(
+        () => {
+
+          state.query =
+            searchInput.value.trim();
+
+          loadItems();
+
+        },
+        350
+      );
+
+  }
+);
+
+
+/* =========================================================
+   REPORT MODAL
+   ========================================================= */
+
+function openReport(type="lost"){
+
+  currentReportType =
+    type;
+
+
+  typeToggle
+    .querySelectorAll("button")
+    .forEach(
+      button => {
+
+        button.classList.toggle(
+          "active",
+          button.dataset.v === type
+        );
+
+      }
+    );
+
+
+  reportOverlay.classList.add(
+    "open"
+  );
+
+}
+
+
+function closeReport(){
+
+  reportOverlay.classList.remove(
+    "open"
+  );
+
+  reportForm.reset();
+
+  currentReportType =
+    "lost";
+
+}
+
+
+document.getElementById(
+  "openReportBtn"
+).addEventListener(
+  "click",
+  () =>
+    openReport("lost")
+);
+
+
+document.getElementById(
+  "heroReportLost"
+).addEventListener(
+  "click",
+  () =>
+    openReport("lost")
+);
+
+
+document.getElementById(
+  "heroReportFound"
+).addEventListener(
+  "click",
+  () =>
+    openReport("found")
+);
+
+
+typeToggle.addEventListener(
+  "click",
+  event => {
+
+    const button =
+      event.target.closest("button");
+
+    if(!button)
+      return;
+
+
+    currentReportType =
+      button.dataset.v;
+
+
+    typeToggle
+      .querySelectorAll("button")
+      .forEach(
+        b =>
+          b.classList.toggle(
+            "active",
+            b === button
+          )
+      );
+
+  }
+);
+
+
+/* =========================================================
+   CREATE ITEM
+   ========================================================= */
+
+reportForm.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+
+    const formData =
+      new FormData(
+        reportForm
+      );
+
+
+    const payload = {
+
+      title:
+        formData.get("title"),
+
+      description:
+        formData.get("description"),
+
+      category:
+        formData.get("category"),
+
+      location:
+        formData.get("location"),
+
+      date:
+        formData.get("date"),
+
+      contact:
+        formData.get("contact"),
+
+      status:
+        currentReportType
+
+    };
+
+
+    const button =
+      document.getElementById(
+        "submitReportBtn"
+      );
+
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "Saving...";
+
+
+    try{
+
+      await Api.createItem(
+        payload
+      );
+
+
+      toast(
+        "Item successfully added to the board!",
+        "success"
+      );
+
+
+      closeReport();
+
+
+      await loadItems();
+
+
+    }catch(error){
+
+      console.error(
+        error
+      );
+
+
+      toast(
+        error.message ||
+        "Could not save item.",
+        "error"
+      );
+
+    }finally{
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Pin it to the board";
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   DETAIL
+   ========================================================= */
+
+async function openDetail(id){
+
+  detailModalBody.innerHTML = `
+
+    <button
+      class="modal-close"
+      data-close
+    >
+      ×
+    </button>
+
+    <h3>
+      Loading case...
+    </h3>
+
+  `;
+
+
+  detailOverlay.classList.add(
+    "open"
+  );
+
+
+  try{
+
+    const item =
+      await Api.getItem(id);
+
+
+    renderDetail(
+      item
+    );
+
+
+  }catch(error){
+
+    console.error(
+      error
+    );
+
+
+    const item =
+      state.items.find(
+        i =>
+          String(i.id) ===
+          String(id)
+      );
+
+
+    if(item){
+
+      renderDetail(
+        item
+      );
+
+    }else{
+
+      toast(
+        "Could not load this item.",
+        "error"
+      );
+
+      closeDetail();
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER DETAIL
+   ========================================================= */
+
+function renderDetail(item){
+
+  const canClaim =
+    item.status !== "claimed";
+
+
+  detailModalBody.innerHTML = `
+
+    <button
+      class="modal-close"
+      data-close
+    >
+      ×
+    </button>
+
+
+    <div class="detail-status">
+
+      <span
+        class="status-chip ${escapeHtml(item.status)}"
+      >
+        ${statusLabel(item.status)}
+      </span>
+
+      <span
+        class="case-no"
+        style="margin-left:8px"
+      >
+        ${escapeHtml(
+          item.case_no ||
+          "#" + item.id
+        )}
+      </span>
+
+    </div>
+
+
+    <h3>
+      ${escapeHtml(item.title)}
+    </h3>
+
+
+    <p class="detail-desc">
+      ${escapeHtml(
+        item.description ||
+        "No description provided."
+      )}
+    </p>
+
+
+    <div class="detail-grid">
+
+      <div>
+        <b>Location</b>
+        ${escapeHtml(
+          item.location || "—"
+        )}
+      </div>
+
+      <div>
+        <b>Date</b>
+        ${formatDate(item.date)}
+      </div>
+
+      <div>
+        <b>Category</b>
+        ${escapeHtml(
+          item.category || "other"
+        )}
+      </div>
+
+      <div>
+        <b>Contact</b>
+        ${escapeHtml(
+          item.contact || "—"
+        )}
+      </div>
+
+    </div>
+
+
+    ${
+      canClaim
+      ?
+
+      `
+
+      <form id="claimForm">
+
+        <div class="form-row">
+
+          <label>
+            Your name
+          </label>
+
+          <input
+            name="claimant_name"
+            required
+            placeholder="Full name"
+          >
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label>
+            Your contact
+          </label>
+
+          <input
+            name="claimant_contact"
+            required
+            placeholder="Email or phone"
+          >
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label>
+            Message
+          </label>
+
+          <textarea
+            name="message"
+            placeholder="Proof it's yours, or where/when to meet..."
+          ></textarea>
+
+        </div>
+
+
+        <div class="form-actions">
+
+          <button
+            type="button"
+            class="btn btn-ghost"
+            data-close
+          >
+            Close
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+          >
+            Mark as claimed
+          </button>
+
+        </div>
+
+      </form>
+
+      `
+
+      :
+
+      `
+
+      <p
+        style="
+          color:var(--found-green);
+          font-size:13px;
+          font-weight:600;
+        "
+      >
+        🎉 This item has already been claimed.
+      </p>
+
+      `
+    }
+
+  `;
+
+
+  const claimForm =
+    document.getElementById(
+      "claimForm"
+    );
+
+
+  if(!claimForm)
+    return;
+
+
+  claimForm.addEventListener(
+    "submit",
+    async event => {
+
+      event.preventDefault();
+
+
+      const formData =
+        new FormData(
+          claimForm
+        );
+
+
+      const payload = {
+
+        claimant_name:
+          formData.get(
+            "claimant_name"
+          ),
+
+        claimant_contact:
+          formData.get(
+            "claimant_contact"
+          ),
+
+        message:
+          formData.get(
+            "message"
+          )
+
+      };
+
+
+      try{
+
+        /*
+          IMPORTANT FIX:
+
+          Previously this was:
+
+          Api.createItem(payload)
+
+          which creates a NEW lost/found item.
+
+          Now it correctly calls:
+
+          POST /items/<id>/claim
+        */
+
+        await Api.claimItem(
+          item.id,
+          payload
+        );
+
+
+        toast(
+          "Item marked as claimed! 🎉",
+          "success"
+        );
+
+
+        closeDetail();
+
+
+        await loadItems();
+
+
+      }catch(error){
+
+        console.error(
+          error
+        );
+
+
+        toast(
+          error.message ||
+          "Could not claim this item.",
+          "error"
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   CLOSE MODALS
+   ========================================================= */
+
+function closeDetail(){
+
+  detailOverlay.classList.remove(
+    "open"
+  );
+
+}
+
+
+document.querySelectorAll(
+  "[data-close]"
+).forEach(
+  button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        closeReport();
+        closeDetail();
+
+      }
+    );
+
+  }
+);
+
+
+document.querySelectorAll(
+  ".overlay"
+).forEach(
+  overlay => {
+
+    overlay.addEventListener(
+      "click",
+      event => {
+
+        if(
+          event.target === overlay
+        ){
+
+          closeReport();
+          closeDetail();
+
+        }
+
+      }
+    );
+
+  }
+);
+
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if(event.key === "Escape"){
+
+      closeReport();
+      closeDetail();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   START APPLICATION
+   ========================================================= */
+
+loadItems();
+
+</script>
+
+</body>
+</html>
