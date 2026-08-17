@@ -1890,8 +1890,16 @@ const Api = {
     const data = await response.json().catch(() => ({}));
 
     if(!response.ok){
+
+      // The Flask backend sends BOTH a friendly "message" (e.g.
+      // "Could not create account") and the raw Supabase "error"
+      // string underneath it (e.g. "Email signups are disabled",
+      // "Password should be at least 8 characters", a rate-limit
+      // message, etc). Prefer the specific one so the real reason
+      // actually shows up in the auth modal instead of always
+      // saying "Could not create account".
       throw new Error(
-        data.message || `Signup failed (${response.status})`
+        data.error || data.message || `Signup failed (${response.status})`
       );
     }
 
@@ -2118,6 +2126,11 @@ const Api = {
 
   async createItem(payload){
 
+    // BUG FIX: this request never sent the Authorization header,
+    // so /api/items (which is @login_required) rejected every
+    // report with 401 "You must be signed in" -- even when the
+    // user genuinely was logged in. authHeaders() attaches the
+    // Bearer token, same as the other authenticated calls below.
     const response =
       await fetch(
         `${CONFIG.API_BASE}/items`,
@@ -2126,7 +2139,8 @@ const Api = {
 
           headers:{
             "Content-Type":
-              "application/json"
+              "application/json",
+            ...authHeaders()
           },
 
           body:
@@ -2158,6 +2172,8 @@ const Api = {
 
   async claimItem(id,payload){
 
+    // Same bug as createItem() above -- missing authHeaders()
+    // meant claiming an item always 401'd too.
     const response =
       await fetch(
         `${CONFIG.API_BASE}/items/${id}/claim`,
@@ -2166,7 +2182,8 @@ const Api = {
 
           headers:{
             "Content-Type":
-              "application/json"
+              "application/json",
+            ...authHeaders()
           },
 
           body:

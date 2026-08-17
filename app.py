@@ -503,12 +503,17 @@ def create_item():
         }), 400
 
 
+    # NOTE: "date" is intentionally NOT required here -- the report
+    # form's date input has no "required" attribute (a lost/found
+    # date is often unknown), and the insert below already handles
+    # a blank date as data["date"] or None. It used to be listed as
+    # required, which meant leaving it blank made every submission
+    # fail with "Missing field: date".
     required_fields = [
         "title",
         "description",
         "category",
         "location",
-        "date",
         "contact",
         "status"
     ]
