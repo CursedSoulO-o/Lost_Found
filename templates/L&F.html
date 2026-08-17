@@ -1102,6 +1102,60 @@ footer{
   color:var(--gold);
 }
 
+/* NOTIFICATIONS */
+
+.notif-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  min-width:16px;
+  height:16px;
+
+  padding:0 4px;
+
+  border-radius:20px;
+
+  background:var(--stamp-red);
+  color:white;
+
+  font-family:var(--font-mono);
+  font-size:10px;
+  font-weight:700;
+
+  margin-left:4px;
+}
+
+.notif-card{
+  background:var(--card);
+  border:1px dashed var(--card-edge);
+  border-radius:6px;
+
+  padding:14px 16px;
+
+  margin-bottom:10px;
+
+  font-size:13px;
+
+  position:relative;
+}
+
+.notif-card.unread{
+  border-style:solid;
+  border-color:var(--gold);
+}
+
+.notif-card .notif-time{
+  display:block;
+
+  margin-top:8px;
+
+  font-family:var(--font-mono);
+  font-size:11px;
+
+  color:var(--ink-soft);
+}
+
 /* RESPONSIVE */
 
 @media(max-width:860px){
@@ -1780,6 +1834,37 @@ footer{
 </div>
 
 
+<!-- NOTIFICATIONS MODAL -->
+
+<div
+  class="overlay"
+  id="notificationsOverlay"
+>
+
+  <div class="modal">
+
+    <button
+      class="modal-close"
+      data-close
+    >
+      ×
+    </button>
+
+    <h3>Match notifications</h3>
+
+    <p class="sub">
+      We check every new report against the opposite board automatically.
+    </p>
+
+    <div id="notificationsList">
+      Loading...
+    </div>
+
+  </div>
+
+</div>
+
+
 <div id="toastStack"></div>
 
 
@@ -2207,6 +2292,66 @@ const Api = {
 
     }
 
+
+    return data;
+
+  },
+
+
+  async listNotifications(){
+
+    const response = await fetch(
+      `${CONFIG.API_BASE}/notifications`,
+      { headers: authHeaders() }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if(!response.ok){
+      throw new Error(
+        data.message || `Could not load notifications (${response.status})`
+      );
+    }
+
+    return data;
+
+  },
+
+
+  async markNotificationRead(id){
+
+    const response = await fetch(
+      `${CONFIG.API_BASE}/notifications/${id}/read`,
+      { method: "POST", headers: authHeaders() }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if(!response.ok){
+      throw new Error(
+        data.message || `Could not update notification (${response.status})`
+      );
+    }
+
+    return data;
+
+  },
+
+
+  async markAllNotificationsRead(){
+
+    const response = await fetch(
+      `${CONFIG.API_BASE}/notifications/read-all`,
+      { method: "POST", headers: authHeaders() }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if(!response.ok){
+      throw new Error(
+        data.message || `Could not update notifications (${response.status})`
+      );
+    }
 
     return data;
 
@@ -2911,7 +3056,7 @@ reportForm.addEventListener(
 
     try{
 
-      await Api.createItem(
+      const created = await Api.createItem(
         payload
       );
 
@@ -2920,6 +3065,25 @@ reportForm.addEventListener(
         "Item successfully added to the board!",
         "success"
       );
+
+
+      // The backend auto-matches this new report against the
+      // opposite board and returns any hits right away, so we
+      // don't have to wait for the next notification poll to
+      // tell the reporter their item might already have a match.
+      const matchCount =
+        Array.isArray(created?.matches)
+          ? created.matches.length
+          : 0;
+
+      if(matchCount > 0){
+        toast(
+          `🎯 Found ${matchCount} possible match${matchCount === 1 ? "" : "es"}! Check your notifications 🔔`,
+          "success"
+        );
+      }
+
+      refreshNotificationBadge();
 
 
       closeReport();
@@ -3321,20 +3485,32 @@ function closeDetail(){
 }
 
 
-document.querySelectorAll(
-  "[data-close]"
-).forEach(
-  button => {
+// BUG FIX: the item detail popup rebuilds detailModalBody.innerHTML
+// every time it opens (openDetail's "Loading case..." placeholder,
+// then renderDetail's actual content), which throws away the ×
+// button and replaces it with a brand-new, listener-less element.
+// Binding directly to each button (like this used to) only ever
+// worked once, on the very first page load, before any item was
+// opened. Delegating the click to `document` means it keeps
+// working no matter how many times the modal's content is
+// re-rendered.
+document.addEventListener(
+  "click",
+  event => {
 
-    button.addEventListener(
-      "click",
-      () => {
+    const closeButton =
+      event.target.closest("[data-close]");
 
-        closeReport();
-        closeDetail();
+    if(!closeButton)
+      return;
 
-      }
-    );
+    if(closeButton.closest("#reportOverlay")){
+      closeReport();
+    }
+
+    if(closeButton.closest("#detailOverlay")){
+      closeDetail();
+    }
 
   }
 );
@@ -3397,6 +3573,11 @@ const authArea = document.getElementById("authArea");
 const authError = document.getElementById("authError");
 const adminOverlay = document.getElementById("adminOverlay");
 const adminClaimsList = document.getElementById("adminClaimsList");
+const notificationsOverlay = document.getElementById("notificationsOverlay");
+const notificationsList = document.getElementById("notificationsList");
+
+let notificationPollTimer = null;
+let lastKnownUnreadCount = null;
 
 function showAuthError(message){
   if(!authError) return;
@@ -3462,6 +3643,9 @@ function updateAuthUI(){
       () => openAuth("login")
     );
 
+    stopNotificationPolling();
+    lastKnownUnreadCount = null;
+
     return;
   }
 
@@ -3486,6 +3670,14 @@ function updateAuthUI(){
         id="myItemsBtn"
       >
         My Items
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-ghost"
+        id="notifBtn"
+      >
+        🔔<span id="notifBadge" class="notif-badge" style="display:none">0</span>
       </button>
 
       ${
@@ -3526,6 +3718,14 @@ function updateAuthUI(){
     "click",
     openAdminPanel
   );
+
+  document.getElementById("notifBtn")?.addEventListener(
+    "click",
+    openNotificationsPanel
+  );
+
+  refreshNotificationBadge();
+  startNotificationPolling();
 }
 
 /* =========================================================
@@ -3837,6 +4037,168 @@ adminOverlay?.addEventListener("click", event => {
 });
 
 /* =========================================================
+   NOTIFICATIONS -- auto-match alerts
+
+   notify_potential_matches() on the backend already scores every
+   new report against the opposite board and writes a notification
+   row for both sides when it clears the threshold. This is just
+   the read side: a bell with an unread count, a panel listing
+   them, and light polling so a match created by someone ELSE's
+   report (not something you just did) still reaches you without
+   a page refresh.
+   ========================================================= */
+
+function timeAgo(dateString){
+  if(!dateString) return "";
+
+  const then = new Date(dateString).getTime();
+
+  if(isNaN(then)) return "";
+
+  const diffMs = Date.now() - then;
+  const diffMin = Math.floor(diffMs / 60000);
+
+  if(diffMin < 1) return "just now";
+  if(diffMin < 60) return `${diffMin}m ago`;
+
+  const diffHr = Math.floor(diffMin / 60);
+  if(diffHr < 24) return `${diffHr}h ago`;
+
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
+async function refreshNotificationBadge(){
+  if(!Auth.user()) return;
+
+  const badge = document.getElementById("notifBadge");
+  if(!badge) return;
+
+  try{
+    const data = await Api.listNotifications();
+    const count = data.unread_count || 0;
+
+    if(count > 0){
+      badge.textContent = count > 99 ? "99+" : String(count);
+      badge.style.display = "inline-flex";
+    }else{
+      badge.style.display = "none";
+    }
+
+    // Only toast when the count goes UP compared to the last time
+    // we checked -- not on the very first load after signing in,
+    // otherwise every login would toast about old notifications.
+    if(lastKnownUnreadCount !== null && count > lastKnownUnreadCount){
+      toast("🔔 New match notification!", "success");
+    }
+
+    lastKnownUnreadCount = count;
+
+  }catch(error){
+    console.error("NOTIFICATION BADGE ERROR:", error);
+  }
+}
+
+function startNotificationPolling(){
+  if(notificationPollTimer) return;
+
+  notificationPollTimer = setInterval(
+    refreshNotificationBadge,
+    20000
+  );
+}
+
+function stopNotificationPolling(){
+  if(!notificationPollTimer) return;
+
+  clearInterval(notificationPollTimer);
+  notificationPollTimer = null;
+}
+
+async function openNotificationsPanel(){
+  if(!Auth.user()){
+    openAuth("login");
+    return;
+  }
+
+  if(notificationsOverlay){
+    notificationsOverlay.classList.add("open");
+  }
+
+  await loadNotifications();
+
+  try{
+    await Api.markAllNotificationsRead();
+    await refreshNotificationBadge();
+  }catch(error){
+    console.error("MARK ALL READ ERROR:", error);
+  }
+}
+
+function closeNotificationsPanel(){
+  if(notificationsOverlay){
+    notificationsOverlay.classList.remove("open");
+  }
+}
+
+async function loadNotifications(){
+  if(!notificationsList) return;
+
+  notificationsList.innerHTML = "Loading...";
+
+  try{
+    const data = await Api.listNotifications();
+    renderNotifications(data.notifications || []);
+
+  }catch(error){
+    console.error("LOAD NOTIFICATIONS ERROR:", error);
+
+    notificationsList.innerHTML = `
+      <p>Could not load notifications: ${escapeHtml(error.message)}</p>
+    `;
+  }
+}
+
+function renderNotifications(notifications){
+  if(!notificationsList) return;
+
+  if(!notifications.length){
+    notificationsList.innerHTML = `
+      <p>No match notifications yet -- report or find an item and we'll check it against the opposite board automatically.</p>
+    `;
+    return;
+  }
+
+  notificationsList.innerHTML = notifications.map(n => `
+    <div class="notif-card ${n.is_read ? "" : "unread"}" data-matched-id="${escapeHtml(n.matched_item_id)}">
+      <div>${escapeHtml(n.message)}</div>
+      <span class="notif-time">${timeAgo(n.created_at)}</span>
+    </div>
+  `).join("");
+
+  notificationsList.querySelectorAll("[data-matched-id]").forEach(card => {
+    card.addEventListener("click", () => {
+      const matchedId = card.dataset.matchedId;
+
+      if(matchedId && matchedId !== "null" && matchedId !== "undefined"){
+        closeNotificationsPanel();
+        openDetail(matchedId);
+      }
+    });
+  });
+}
+
+document.querySelectorAll("#notificationsOverlay [data-close]").forEach(button => {
+  button.addEventListener("click", closeNotificationsPanel);
+});
+
+notificationsOverlay?.addEventListener("click", event => {
+  if(event.target === notificationsOverlay){
+    closeNotificationsPanel();
+  }
+});
+
+/* =========================================================
    REQUIRE LOGIN FOR REPORTING
    ========================================================= */
 
@@ -3874,6 +4236,10 @@ document.addEventListener("keydown", event => {
 
     if(adminOverlay?.classList.contains("open")){
       closeAdminPanel();
+    }
+
+    if(notificationsOverlay?.classList.contains("open")){
+      closeNotificationsPanel();
     }
   }
 });

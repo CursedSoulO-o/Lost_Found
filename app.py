@@ -160,6 +160,126 @@ def admin_required(view_func):
 
 
 # ============================================================
+# MATCHING HELPERS
+#
+# Shared by /api/matches/<id> (manual lookup) and the automatic
+# matching that runs whenever a new item is reported (see
+# notify_potential_matches, called from create_item below).
+# ============================================================
+
+MATCH_THRESHOLD = 50
+
+
+def calculate_match_score(target, item):
+    """
+    Score how likely `item` is to be the counterpart of `target`
+    (one lost, one found). Same weights the old find_matches()
+    route used inline -- pulled out here so item creation can run
+    the identical check instead of duplicating the logic.
+    """
+
+    score = 0
+
+    if str(target.get("title", "")).lower() == str(item.get("title", "")).lower():
+        score += 40
+
+    if str(target.get("category", "")).lower() == str(item.get("category", "")).lower():
+        score += 20
+
+    if str(target.get("location", "")).lower() == str(item.get("location", "")).lower():
+        score += 30
+
+    if target.get("date") == item.get("date"):
+        score += 10
+
+    return score
+
+
+def notify_potential_matches(new_item):
+    """
+    Runs right after a new lost/found item is inserted. Looks for
+    existing items with the opposite status that score >= the
+    match threshold, and drops a notification row for BOTH sides:
+    the person who just reported this item, and the person who
+    reported the matching item -- so neither has to go looking for
+    the other, the board tells them.
+
+    Best-effort: any failure here is caught by the caller (item
+    creation should still succeed even if notifying fails).
+    """
+
+    opposite_status = "found" if new_item.get("status") == "lost" else "lost"
+
+    candidates_response = (
+        supabase
+        .table("items")
+        .select("*")
+        .eq("status", opposite_status)
+        .execute()
+    )
+
+    candidates = candidates_response.data or []
+
+    matches = []
+    notification_rows = []
+
+    for candidate in candidates:
+
+        if candidate.get("id") == new_item.get("id"):
+            continue
+
+        # Don't notify someone about matching their own two reports.
+        if (
+            new_item.get("user_id")
+            and candidate.get("user_id")
+            and candidate.get("user_id") == new_item.get("user_id")
+        ):
+            continue
+
+        score = calculate_match_score(new_item, candidate)
+
+        if score < MATCH_THRESHOLD:
+            continue
+
+        matches.append({"match_score": score, "item": candidate})
+
+        if new_item.get("user_id"):
+            notification_rows.append({
+                "user_id": new_item["user_id"],
+                "item_id": new_item["id"],
+                "matched_item_id": candidate["id"],
+                "match_score": score,
+                "message": (
+                    f"Your {new_item.get('status')} report "
+                    f"\"{new_item.get('title')}\" might match a "
+                    f"{candidate.get('status')} item: "
+                    f"\"{candidate.get('title')}\" ({score}% match)."
+                )
+            })
+
+        if candidate.get("user_id"):
+            notification_rows.append({
+                "user_id": candidate["user_id"],
+                "item_id": candidate["id"],
+                "matched_item_id": new_item["id"],
+                "match_score": score,
+                "message": (
+                    f"A new {new_item.get('status')} report "
+                    f"\"{new_item.get('title')}\" might match your "
+                    f"{candidate.get('status')} item: "
+                    f"\"{candidate.get('title')}\" ({score}% match)."
+                )
+            })
+
+    if notification_rows:
+        supabase.table("notifications").insert(notification_rows).execute()
+
+    matches.sort(key=lambda m: m["match_score"], reverse=True)
+
+    return matches
+
+
+# ============================================================
 # HOME
 # ============================================================
 
@@ -606,10 +726,27 @@ def create_item():
             }), 500
 
 
+        new_item = created_items[0]
+
+        # ----------------------------------------------------
+        # Auto-match against the opposite list and notify both
+        # sides. Never let a notification problem block the item
+        # itself from being created.
+        # ----------------------------------------------------
+
+        matches = []
+
+        try:
+            matches = notify_potential_matches(new_item)
+        except Exception as e:
+            print("MATCH NOTIFY ERROR:", e)
+
+
         return jsonify({
             "success": True,
             "message": "Item created successfully",
-            "item": created_items[0]
+            "item": new_item,
+            "matches": matches
         }), 201
 
 
@@ -857,7 +994,9 @@ def find_matches(item_id):
 
 
         # ----------------------------------------------------
-        # Calculate match score
+        # Calculate match score (shared with the auto-notify
+        # logic in notify_potential_matches -- see MATCHING
+        # HELPERS near the top of the file)
         # ----------------------------------------------------
 
         for item in possible_matches:
@@ -865,59 +1004,9 @@ def find_matches(item_id):
             if item["id"] == target["id"]:
                 continue
 
+            score = calculate_match_score(target, item)
 
-            score = 0
-
-
-            # Title
-            if (
-
-                str(target.get("title", "")).lower()
-
-                ==
-
-                str(item.get("title", "")).lower()
-
-            ):
-
-                score += 40
-
-
-            # Category
-            if (
-
-                str(target.get("category", "")).lower()
-
-                ==
-
-                str(item.get("category", "")).lower()
-
-            ):
-
-                score += 20
-
-
-            # Location
-            if (
-
-                str(target.get("location", "")).lower()
-
-                ==
-
-                str(item.get("location", "")).lower()
-
-            ):
-
-                score += 30
-
-
-            # Date
-            if target.get("date") == item.get("date"):
-
-                score += 10
-
-
-            if score >= 50:
+            if score >= MATCH_THRESHOLD:
 
                 matches.append({
 
@@ -1262,6 +1351,124 @@ def reject_claim(item_id):
         return jsonify({
             "success": False,
             "message": "Could not reject claim",
+            "error": str(e)
+        }), 500
+
+
+# ============================================================
+# NOTIFICATIONS
+#
+# Rows get created automatically by notify_potential_matches()
+# whenever a new lost/found item matches an existing one (see
+# create_item / MATCHING HELPERS above). These endpoints just let
+# a signed-in user read and clear their own notifications.
+# ============================================================
+
+@app.route("/api/notifications", methods=["GET"])
+@login_required
+def list_notifications():
+
+    try:
+
+        response = (
+            supabase
+            .table("notifications")
+            .select("*")
+            .eq("user_id", request.user.id)
+            .order("created_at", desc=True)
+            .limit(50)
+            .execute()
+        )
+
+        notifications = response.data or []
+
+        unread_count = len([
+            n for n in notifications if not n.get("is_read")
+        ])
+
+        return jsonify({
+            "success": True,
+            "notifications": notifications,
+            "unread_count": unread_count
+        })
+
+    except Exception as e:
+
+        print("LIST NOTIFICATIONS ERROR:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Could not load notifications",
+            "error": str(e)
+        }), 500
+
+
+@app.route("/api/notifications/<int:notification_id>/read", methods=["POST"])
+@login_required
+def mark_notification_read(notification_id):
+
+    try:
+
+        response = (
+            supabase
+            .table("notifications")
+            .update({"is_read": True})
+            .eq("id", notification_id)
+            .eq("user_id", request.user.id)
+            .execute()
+        )
+
+        updated = response.data or []
+
+        if not updated:
+            return jsonify({
+                "success": False,
+                "message": "Notification not found"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "notification": updated[0]
+        })
+
+    except Exception as e:
+
+        print("MARK NOTIFICATION READ ERROR:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Could not update notification",
+            "error": str(e)
+        }), 500
+
+
+@app.route("/api/notifications/read-all", methods=["POST"])
+@login_required
+def mark_all_notifications_read():
+
+    try:
+
+        (
+            supabase
+            .table("notifications")
+            .update({"is_read": True})
+            .eq("user_id", request.user.id)
+            .eq("is_read", False)
+            .execute()
+        )
+
+        return jsonify({
+            "success": True,
+            "message": "All notifications marked as read"
+        })
+
+    except Exception as e:
+
+        print("MARK ALL NOTIFICATIONS READ ERROR:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Could not update notifications",
             "error": str(e)
         }), 500
 
