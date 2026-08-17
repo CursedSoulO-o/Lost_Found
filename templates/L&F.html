@@ -1798,6 +1798,52 @@ footer{
   color:var(--ink-soft);
 }
 
+/* MY ITEMS PANEL -- own dedicated modal, styled like the
+   notification rows above rather than the full board cards,
+   since this is a compact list rather than the board grid. */
+
+.my-item-row{
+  background:var(--card);
+  border:1px dashed var(--card-edge);
+  border-radius:6px;
+
+  padding:14px 16px;
+
+  margin-bottom:10px;
+
+  font-size:13px;
+
+  cursor:pointer;
+
+  transition:transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s ease;
+}
+
+.my-item-row:hover{
+  transform:translateY(-3px);
+  box-shadow:var(--shadow-sm);
+}
+
+.my-item-row-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  gap:10px;
+}
+
+.my-item-row h4{
+  margin-top:8px;
+}
+
+.my-item-row-meta{
+  display:block;
+
+  margin-top:6px;
+
+  font-size:12px;
+  color:var(--ink-soft);
+}
+
 /* RESPONSIVE */
 
 @media(max-width:860px){
@@ -2516,6 +2562,37 @@ footer{
     </p>
 
     <div id="notificationsList">
+      Loading...
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- MY ITEMS MODAL -->
+
+<div
+  class="overlay"
+  id="myItemsOverlay"
+>
+
+  <div class="modal">
+
+    <button
+      class="modal-close"
+      data-close
+    >
+      ×
+    </button>
+
+    <h3>My reported items</h3>
+
+    <p class="sub">
+      Everything you've filed as lost or found, in one place.
+    </p>
+
+    <div id="myItemsList">
       Loading...
     </div>
 
@@ -4417,6 +4494,8 @@ const adminOverlay = document.getElementById("adminOverlay");
 const adminClaimsList = document.getElementById("adminClaimsList");
 const notificationsOverlay = document.getElementById("notificationsOverlay");
 const notificationsList = document.getElementById("notificationsList");
+const myItemsOverlay = document.getElementById("myItemsOverlay");
+const myItemsList = document.getElementById("myItemsList");
 
 let notificationPollTimer = null;
 let lastKnownUnreadCount = null;
@@ -4716,29 +4795,37 @@ function logout(){
    MY ITEMS
    ========================================================= */
 
+// "My Items" used to hijack the main board grid (renderGrid on the
+// same #itemGrid the search/filter board uses), so opening it wiped
+// out whatever the person was browsing on the board with no way
+// back except reloading or re-filtering. It now opens its own
+// dedicated panel -- same pattern as the admin claims / notifications
+// modals -- and never touches state.items or the board grid at all.
 async function showMyItems(){
   if(!Auth.user()){
     openAuth("login");
     return;
   }
 
+  if(myItemsOverlay){
+    myItemsOverlay.classList.add("open");
+  }
+
+  if(myItemsList){
+    myItemsList.innerHTML = "Loading...";
+  }
+
   try{
     const items = await Api.listMyItems();
 
-    state.items = Array.isArray(items) ? items : [];
-
-    renderGrid(state.items);
-    updateStats(state.items);
-
-    toast(
-      state.items.length
-        ? `Showing your ${state.items.length} item${state.items.length === 1 ? "" : "s"}.`
-        : "You haven't reported any items yet.",
-      state.items.length ? "success" : ""
-    );
+    renderMyItems(Array.isArray(items) ? items : []);
 
   }catch(error){
     console.error("MY ITEMS ERROR:", error);
+
+    if(myItemsList){
+      myItemsList.innerHTML = `<p>${escapeHtml(error.message || "Could not load your items.")}</p>`;
+    }
 
     toast(
       error.message || "Could not load your items.",
@@ -4746,6 +4833,51 @@ async function showMyItems(){
     );
   }
 }
+
+function closeMyItemsPanel(){
+  if(myItemsOverlay){
+    myItemsOverlay.classList.remove("open");
+  }
+}
+
+function renderMyItems(items){
+  if(!myItemsList) return;
+
+  if(!items.length){
+    myItemsList.innerHTML = `
+      <p>You haven't reported any items yet.</p>
+    `;
+    return;
+  }
+
+  myItemsList.innerHTML = items.map(item => `
+    <div class="my-item-row" data-id="${escapeHtml(item.id)}">
+      <div class="my-item-row-top">
+        <span class="status-chip ${escapeHtml(item.status)}">${statusLabel(item.status)}</span>
+        <span class="case-no">${escapeHtml(item.case_no || "#" + item.id)}</span>
+      </div>
+      <h4>${escapeHtml(item.title)}</h4>
+      <span class="my-item-row-meta">📍 ${escapeHtml(item.location || "—")}</span>
+    </div>
+  `).join("");
+
+  myItemsList.querySelectorAll("[data-id]").forEach(row => {
+    row.addEventListener("click", () => {
+      closeMyItemsPanel();
+      openDetail(row.dataset.id);
+    });
+  });
+}
+
+document.querySelectorAll("#myItemsOverlay [data-close]").forEach(button => {
+  button.addEventListener("click", closeMyItemsPanel);
+});
+
+myItemsOverlay?.addEventListener("click", event => {
+  if(event.target === myItemsOverlay){
+    closeMyItemsPanel();
+  }
+});
 
 /* =========================================================
    ADMIN: PENDING CLAIMS PANEL
@@ -5082,6 +5214,10 @@ document.addEventListener("keydown", event => {
 
     if(notificationsOverlay?.classList.contains("open")){
       closeNotificationsPanel();
+    }
+
+    if(myItemsOverlay?.classList.contains("open")){
+      closeMyItemsPanel();
     }
   }
 });
