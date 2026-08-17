@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from supabase import create_client, Client
+from functools import wraps
 import os
 
 app = Flask(__name__)
@@ -13,15 +14,132 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
+# Used only for auth calls (sign up / sign in). Falls back to the
+# service role key if no anon key is configured, since the GoTrue
+# auth endpoints work with either.
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY") or SUPABASE_KEY
+
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError(
         "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variable."
     )
 
+# Service-role client: used for all data reads/writes (bypasses RLS).
 supabase: Client = create_client(
     SUPABASE_URL,
     SUPABASE_KEY
 )
+
+# Auth client: used only for sign up / sign in / token verification.
+supabase_auth: Client = create_client(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+)
+
+
+# ============================================================
+# AUTH HELPERS
+# ============================================================
+
+def get_bearer_token():
+    """Pull the raw JWT out of the Authorization: Bearer <token> header."""
+
+    header = request.headers.get("Authorization", "")
+
+    if not header.startswith("Bearer "):
+        return None
+
+    return header.split(" ", 1)[1].strip()
+
+
+def get_current_user():
+    """
+    Verify the request's access token with Supabase and return the
+    auth user object, or None if there's no valid session.
+    """
+
+    token = get_bearer_token()
+
+    if not token:
+        return None
+
+    try:
+        result = supabase_auth.auth.get_user(token)
+        return result.user if result else None
+
+    except Exception as e:
+        print("AUTH VERIFY ERROR:", e)
+        return None
+
+
+def get_profile(user_id):
+    """Fetch a user's profile row (contains their role)."""
+
+    try:
+        response = (
+            supabase
+            .table("profiles")
+            .select("*")
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+        )
+
+        data = response.data or []
+        return data[0] if data else None
+
+    except Exception as e:
+        print("GET PROFILE ERROR:", e)
+        return None
+
+
+def login_required(view_func):
+    """Require a valid Supabase session. Attaches request.user."""
+
+    @wraps(view_func)
+    def wrapped(*args, **kwargs):
+
+        user = get_current_user()
+
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "You must be signed in to do that."
+            }), 401
+
+        request.user = user
+        return view_func(*args, **kwargs)
+
+    return wrapped
+
+
+def admin_required(view_func):
+    """Require a valid session belonging to an admin. Attaches request.user/profile."""
+
+    @wraps(view_func)
+    def wrapped(*args, **kwargs):
+
+        user = get_current_user()
+
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "You must be signed in to do that."
+            }), 401
+
+        profile = get_profile(user.id)
+
+        if not profile or profile.get("role") != "admin":
+            return jsonify({
+                "success": False,
+                "message": "Admin access required."
+            }), 403
+
+        request.user = user
+        request.profile = profile
+        return view_func(*args, **kwargs)
+
+    return wrapped
 
 
 # ============================================================
@@ -31,6 +149,154 @@ supabase: Client = create_client(
 @app.route("/")
 def home():
     return render_template("L&F.html")
+
+
+# ============================================================
+# AUTH: SIGN UP
+# ============================================================
+
+@app.route("/api/auth/signup", methods=["POST"])
+def signup():
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({
+            "success": False,
+            "message": "No data received"
+        }), 400
+
+    email = str(data.get("email", "")).strip()
+    password = str(data.get("password", ""))
+
+    if not email or not password:
+        return jsonify({
+            "success": False,
+            "message": "Email and password are required"
+        }), 400
+
+    if len(password) < 6:
+        return jsonify({
+            "success": False,
+            "message": "Password must be at least 6 characters"
+        }), 400
+
+    try:
+        result = supabase_auth.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+
+        if not result.user:
+            return jsonify({
+                "success": False,
+                "message": "Could not create account"
+            }), 400
+
+        # Session is None if the project requires email confirmation
+        session = result.session
+
+        return jsonify({
+            "success": True,
+            "message": (
+                "Account created!"
+                if session else
+                "Account created! Check your email to confirm before signing in."
+            ),
+            "access_token": session.access_token if session else None,
+            "user": {
+                "id": result.user.id,
+                "email": result.user.email,
+                "role": "user"
+            }
+        }), 201
+
+    except Exception as e:
+        print("SIGNUP ERROR:", e)
+        return jsonify({
+            "success": False,
+            "message": "Could not create account",
+            "error": str(e)
+        }), 400
+
+
+# ============================================================
+# AUTH: LOG IN
+# ============================================================
+
+@app.route("/api/auth/login", methods=["POST"])
+def login():
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({
+            "success": False,
+            "message": "No data received"
+        }), 400
+
+    email = str(data.get("email", "")).strip()
+    password = str(data.get("password", ""))
+
+    if not email or not password:
+        return jsonify({
+            "success": False,
+            "message": "Email and password are required"
+        }), 400
+
+    try:
+        result = supabase_auth.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+
+        if not result.session:
+            return jsonify({
+                "success": False,
+                "message": "Invalid email or password"
+            }), 401
+
+        profile = get_profile(result.user.id)
+        role = profile.get("role") if profile else "user"
+
+        return jsonify({
+            "success": True,
+            "message": "Signed in successfully",
+            "access_token": result.session.access_token,
+            "user": {
+                "id": result.user.id,
+                "email": result.user.email,
+                "role": role
+            }
+        })
+
+    except Exception as e:
+        print("LOGIN ERROR:", e)
+        return jsonify({
+            "success": False,
+            "message": "Invalid email or password"
+        }), 401
+
+
+# ============================================================
+# AUTH: CURRENT USER
+# ============================================================
+
+@app.route("/api/auth/me", methods=["GET"])
+@login_required
+def me():
+
+    profile = get_profile(request.user.id)
+    role = profile.get("role") if profile else "user"
+
+    return jsonify({
+        "success": True,
+        "user": {
+            "id": request.user.id,
+            "email": request.user.email,
+            "role": role
+        }
+    })
 
 
 # ============================================================
@@ -167,10 +433,46 @@ def get_item(item_id):
 
 
 # ============================================================
+# GET MY ITEMS
+# ============================================================
+
+@app.route("/api/items/mine", methods=["GET"])
+@login_required
+def get_my_items():
+
+    try:
+
+        response = (
+            supabase
+            .table("items")
+            .select("*")
+            .eq("user_id", request.user.id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        return jsonify({
+            "success": True,
+            "items": response.data or []
+        })
+
+    except Exception as e:
+
+        print("GET MY ITEMS ERROR:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Could not load your items",
+            "error": str(e)
+        }), 500
+
+
+# ============================================================
 # CREATE ITEM
 # ============================================================
 
 @app.route("/api/items", methods=["POST"])
+@login_required
 def create_item():
 
     data = request.get_json()
@@ -255,7 +557,10 @@ def create_item():
                 data["date"] or None,
 
             "contact":
-                str(data["contact"]).strip()
+                str(data["contact"]).strip(),
+
+            "user_id":
+                request.user.id
 
         }
 
@@ -302,9 +607,42 @@ def create_item():
 # ============================================================
 
 @app.route("/api/items/<int:item_id>", methods=["DELETE"])
+@login_required
 def delete_item(item_id):
 
     try:
+
+        # ------------------------------------------------------------
+        # Only the reporter or an admin may delete an item
+        # ------------------------------------------------------------
+
+        existing_response = (
+            supabase
+            .table("items")
+            .select("user_id")
+            .eq("id", item_id)
+            .limit(1)
+            .execute()
+        )
+
+        existing = existing_response.data or []
+
+        if not existing:
+            return jsonify({
+                "success": False,
+                "message": "Item not found"
+            }), 404
+
+        is_owner = existing[0].get("user_id") == request.user.id
+
+        if not is_owner:
+            profile = get_profile(request.user.id)
+
+            if not profile or profile.get("role") != "admin":
+                return jsonify({
+                    "success": False,
+                    "message": "You can only delete items you reported"
+                }), 403
 
         response = (
             supabase
@@ -608,6 +946,7 @@ def find_matches(item_id):
 # ============================================================
 
 @app.route("/api/items/<int:item_id>/claim", methods=["POST"])
+@login_required
 def claim_item(item_id):
 
     data = request.get_json()
@@ -676,7 +1015,7 @@ def claim_item(item_id):
 
 
         # ----------------------------------------------------
-        # Check already claimed
+        # Check already claimed / already pending review
         # ----------------------------------------------------
 
         if item["status"] == "claimed":
@@ -686,14 +1025,28 @@ def claim_item(item_id):
                 "message": "Item has already been claimed"
             }), 400
 
+        if item.get("claim_status") == "pending":
+
+            return jsonify({
+                "success": False,
+                "message": "This item already has a claim awaiting admin review"
+            }), 400
+
 
         # ----------------------------------------------------
         # Update Supabase
+        #
+        # Claiming no longer marks the item "claimed" directly.
+        # It goes to "pending" review so an admin can verify the
+        # claimant before the item is handed over.
         # ----------------------------------------------------
 
         update_data = {
 
-            "status": "claimed",
+            "claim_status": "pending",
+
+            "claimant_user_id":
+                request.user.id,
 
             "claimant_name":
                 claimant_name,
@@ -734,7 +1087,7 @@ def claim_item(item_id):
             "success": True,
 
             "message":
-                "Item claimed successfully",
+                "Claim submitted! An admin will review it shortly.",
 
             "item":
                 updated_items[0]
@@ -756,6 +1109,138 @@ def claim_item(item_id):
             "error":
                 str(e)
 
+        }), 500
+
+
+# ============================================================
+# ADMIN: LIST PENDING CLAIMS
+# ============================================================
+
+@app.route("/api/admin/claims", methods=["GET"])
+@admin_required
+def list_pending_claims():
+
+    try:
+
+        response = (
+            supabase
+            .table("items")
+            .select("*")
+            .eq("claim_status", "pending")
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        return jsonify({
+            "success": True,
+            "items": response.data or []
+        })
+
+    except Exception as e:
+
+        print("LIST CLAIMS ERROR:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Could not load pending claims",
+            "error": str(e)
+        }), 500
+
+
+# ============================================================
+# ADMIN: APPROVE CLAIM
+# ============================================================
+
+@app.route("/api/admin/claims/<int:item_id>/approve", methods=["POST"])
+@admin_required
+def approve_claim(item_id):
+
+    try:
+
+        response = (
+            supabase
+            .table("items")
+            .update({
+                "status": "claimed",
+                "claim_status": "approved"
+            })
+            .eq("id", item_id)
+            .eq("claim_status", "pending")
+            .execute()
+        )
+
+        updated = response.data or []
+
+        if not updated:
+            return jsonify({
+                "success": False,
+                "message": "No pending claim found for this item"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "message": "Claim approved. Item marked as claimed.",
+            "item": updated[0]
+        })
+
+    except Exception as e:
+
+        print("APPROVE CLAIM ERROR:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Could not approve claim",
+            "error": str(e)
+        }), 500
+
+
+# ============================================================
+# ADMIN: REJECT CLAIM
+# ============================================================
+
+@app.route("/api/admin/claims/<int:item_id>/reject", methods=["POST"])
+@admin_required
+def reject_claim(item_id):
+
+    try:
+
+        response = (
+            supabase
+            .table("items")
+            .update({
+                "claim_status": "rejected",
+                "claimant_user_id": None,
+                "claimant_name": None,
+                "claimant_contact": None,
+                "claim_message": None
+            })
+            .eq("id", item_id)
+            .eq("claim_status", "pending")
+            .execute()
+        )
+
+        updated = response.data or []
+
+        if not updated:
+            return jsonify({
+                "success": False,
+                "message": "No pending claim found for this item"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "message": "Claim rejected. Item is available again.",
+            "item": updated[0]
+        })
+
+    except Exception as e:
+
+        print("REJECT CLAIM ERROR:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Could not reject claim",
+            "error": str(e)
         }), 500
 
 

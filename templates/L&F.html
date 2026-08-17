@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Fond & Found — Campus Lost & Found</title>
+<title>Lost & Found — Campus Lost & Found</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -936,6 +936,172 @@ footer{
   font-family:var(--font-mono);
 }
 
+/* ACCOUNT */
+
+.account-chip{
+  display:flex;
+  align-items:center;
+  gap:10px;
+
+  background:var(--card);
+
+  border:1.5px solid var(--card-edge);
+
+  border-radius:20px;
+
+  padding:6px 14px 6px 6px;
+
+  font-size:13px;
+  font-weight:600;
+}
+
+.account-avatar{
+  width:26px;
+  height:26px;
+
+  border-radius:50%;
+
+  background:var(--ink);
+  color:var(--paper);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-family:var(--font-mono);
+  font-size:11px;
+  font-weight:700;
+}
+
+.role-badge{
+  font-family:var(--font-mono);
+  font-size:9px;
+  font-weight:700;
+
+  letter-spacing:.6px;
+
+  text-transform:uppercase;
+
+  padding:2px 7px;
+
+  border-radius:20px;
+
+  background:var(--gold);
+  color:white;
+}
+
+.link-btn{
+  background:none;
+  border:none;
+
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+
+  color:var(--ink-soft);
+
+  text-decoration:underline;
+  cursor:pointer;
+}
+
+.auth-tabs{
+  display:flex;
+
+  gap:8px;
+
+  margin-bottom:20px;
+
+  border-bottom:1.5px solid var(--card-edge);
+}
+
+.auth-tabs button{
+  flex:1;
+
+  background:none;
+  border:none;
+
+  padding:10px 4px;
+
+  font-weight:700;
+  font-size:14px;
+
+  color:var(--ink-soft);
+
+  border-bottom:2px solid transparent;
+}
+
+.auth-tabs button.active{
+  color:var(--ink);
+  border-bottom-color:var(--stamp-red);
+}
+
+.auth-panel{
+  display:none;
+}
+
+.auth-panel.active{
+  display:block;
+}
+
+.auth-error{
+  background:rgba(178,58,72,.1);
+  color:var(--stamp-red-dark);
+
+  border-radius:6px;
+
+  padding:10px 12px;
+
+  font-size:13px;
+
+  margin-bottom:14px;
+
+  display:none;
+}
+
+.auth-error.show{
+  display:block;
+}
+
+.claim-card{
+  background:var(--card);
+  border:1px dashed var(--card-edge);
+  border-radius:6px;
+
+  padding:14px 16px;
+
+  margin-bottom:14px;
+}
+
+.claim-card h4{
+  font-size:15px;
+}
+
+.claim-card .tag-meta{
+  margin-top:8px;
+}
+
+.claim-actions{
+  display:flex;
+  gap:10px;
+
+  margin-top:12px;
+}
+
+.claim-actions .btn{
+  padding:8px 16px;
+  font-size:13px;
+}
+
+.btn-reject{
+  background:var(--stamp-red);
+  color:white;
+}
+
+.status-chip.pending{
+  background:rgba(168,134,47,.15);
+  color:var(--gold);
+}
+
 /* RESPONSIVE */
 
 @media(max-width:860px){
@@ -966,12 +1132,12 @@ footer{
   <div class="brand">
 
     <div class="brand-mark">
-      F&amp;F
+      L&amp;F
     </div>
 
     <div>
 
-      <h1>Fond &amp; Found</h1>
+      <h1>Lost &amp; Found</h1>
 
       <span>
         Case Board · Est. Today
@@ -981,12 +1147,18 @@ footer{
 
   </div>
 
-  <button
-    class="btn btn-primary"
-    id="openReportBtn"
-  >
-    + File a new tag
-  </button>
+  <div style="display:flex;align-items:center;gap:12px;">
+
+    <button
+      class="btn btn-primary"
+      id="openReportBtn"
+    >
+      + File a new tag
+    </button>
+
+    <div id="authArea"></div>
+
+  </div>
 
 </header>
 
@@ -1217,7 +1389,7 @@ footer{
 
 
 <footer>
-  FOND &amp; FOUND — connected to your Flask API · build with care
+  LOST &amp; FOUND — connected to your Flask API · build with care
 </footer>
 
 
@@ -1441,6 +1613,166 @@ footer{
 </div>
 
 
+<!-- AUTH MODAL -->
+
+<div
+  class="overlay"
+  id="authOverlay"
+>
+
+  <div class="modal">
+
+    <button
+      class="modal-close"
+      data-close
+    >
+      ×
+    </button>
+
+    <h3>Your account</h3>
+
+    <p class="sub">
+      Sign in to report items, claim them, and track your cases.
+    </p>
+
+
+    <div class="auth-tabs" id="authTabs">
+
+      <button
+        type="button"
+        class="active"
+        data-v="login"
+      >
+        Sign in
+      </button>
+
+      <button
+        type="button"
+        data-v="signup"
+      >
+        Create account
+      </button>
+
+    </div>
+
+
+    <div class="auth-error" id="authError"></div>
+
+
+    <div class="auth-panel active" id="loginPanel">
+
+      <form id="loginForm">
+
+        <div class="form-row">
+          <label>Email</label>
+          <input
+            name="email"
+            type="email"
+            required
+            placeholder="you@college.edu"
+          >
+        </div>
+
+        <div class="form-row">
+          <label>Password</label>
+          <input
+            name="password"
+            type="password"
+            required
+            placeholder="••••••••"
+          >
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            id="loginSubmitBtn"
+          >
+            Sign in
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+
+
+    <div class="auth-panel" id="signupPanel">
+
+      <form id="signupForm">
+
+        <div class="form-row">
+          <label>Email</label>
+          <input
+            name="email"
+            type="email"
+            required
+            placeholder="you@college.edu"
+          >
+        </div>
+
+        <div class="form-row">
+          <label>Password</label>
+          <input
+            name="password"
+            type="password"
+            required
+            minlength="6"
+            placeholder="At least 6 characters"
+          >
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            id="signupSubmitBtn"
+          >
+            Create account
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ADMIN MODAL -->
+
+<div
+  class="overlay"
+  id="adminOverlay"
+>
+
+  <div class="modal">
+
+    <button
+      class="modal-close"
+      data-close
+    >
+      ×
+    </button>
+
+    <h3>Pending claims</h3>
+
+    <p class="sub">
+      Review and verify claims before an item changes hands.
+    </p>
+
+    <div id="adminClaimsList">
+      Loading...
+    </div>
+
+  </div>
+
+</div>
+
+
 <div id="toastStack"></div>
 
 
@@ -1472,10 +1804,198 @@ const CONFIG = {
 
 
 /* =========================================================
+   AUTH STATE
+   Session persists across page loads in localStorage.
+   ========================================================= */
+
+const Auth = {
+
+  KEY: "fondfound_session",
+
+  get(){
+
+    try{
+      const raw = localStorage.getItem(this.KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){
+      return null;
+    }
+
+  },
+
+  set(session){
+    localStorage.setItem(
+      this.KEY,
+      JSON.stringify(session)
+    );
+  },
+
+  clear(){
+    localStorage.removeItem(this.KEY);
+  },
+
+  token(){
+    const session = this.get();
+    return session ? session.access_token : null;
+  },
+
+  user(){
+    const session = this.get();
+    return session ? session.user : null;
+  },
+
+  isAdmin(){
+    const user = this.user();
+    return !!user && user.role === "admin";
+  }
+
+};
+
+
+function authHeaders(){
+
+  const token = Auth.token();
+
+  return token
+    ? { "Authorization": `Bearer ${token}` }
+    : {};
+
+}
+
+
+/* =========================================================
    API LAYER
    ========================================================= */
 
 const Api = {
+
+  async signup(email, password){
+
+    const response = await fetch(
+      `${CONFIG.API_BASE}/auth/signup`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if(!response.ok){
+      throw new Error(
+        data.message || `Signup failed (${response.status})`
+      );
+    }
+
+    return data;
+
+  },
+
+
+  async login(email, password){
+
+    const response = await fetch(
+      `${CONFIG.API_BASE}/auth/login`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if(!response.ok){
+      throw new Error(
+        data.message || `Login failed (${response.status})`
+      );
+    }
+
+    return data;
+
+  },
+
+
+  async listMyItems(){
+
+    const response = await fetch(
+      `${CONFIG.API_BASE}/items/mine`,
+      { headers: authHeaders() }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if(!response.ok){
+      throw new Error(
+        data.message || `Could not load your items (${response.status})`
+      );
+    }
+
+    return data.items || [];
+
+  },
+
+
+  async listPendingClaims(){
+
+    const response = await fetch(
+      `${CONFIG.API_BASE}/admin/claims`,
+      { headers: authHeaders() }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if(!response.ok){
+      throw new Error(
+        data.message || `Could not load claims (${response.status})`
+      );
+    }
+
+    return data.items || [];
+
+  },
+
+
+  async approveClaim(id){
+
+    const response = await fetch(
+      `${CONFIG.API_BASE}/admin/claims/${id}/approve`,
+      { method: "POST", headers: authHeaders() }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if(!response.ok){
+      throw new Error(
+        data.message || `Could not approve claim (${response.status})`
+      );
+    }
+
+    return data;
+
+  },
+
+
+  async rejectClaim(id){
+
+    const response = await fetch(
+      `${CONFIG.API_BASE}/admin/claims/${id}/reject`,
+      { method: "POST", headers: authHeaders() }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if(!response.ok){
+      throw new Error(
+        data.message || `Could not reject claim (${response.status})`
+      );
+    }
+
+    return data;
+
+  },
+
 
   async listItems({
     status = "",
@@ -2834,6 +3354,328 @@ document.addEventListener(
 
   }
 );
+
+
+/* =========================================================
+   ACCOUNT SYSTEM
+   ========================================================= */
+
+const authOverlay = document.getElementById("authOverlay");
+const authArea = document.getElementById("authArea");
+const authError = document.getElementById("authError");
+
+function openAuth(mode = "login"){
+  if(!authOverlay) return;
+
+  authOverlay.classList.add("open");
+
+  if(authError){
+    authError.textContent = "";
+  }
+
+  document.querySelectorAll("#authTabs button").forEach(button => {
+    button.classList.toggle("active", button.dataset.v === mode);
+  });
+
+  document.querySelectorAll(".auth-panel").forEach(panel => {
+    panel.classList.remove("active");
+  });
+
+  const panel = document.getElementById(
+    mode === "signup" ? "signupPanel" : "loginPanel"
+  );
+
+  if(panel){
+    panel.classList.add("active");
+  }
+}
+
+function closeAuth(){
+  if(authOverlay){
+    authOverlay.classList.remove("open");
+  }
+
+  if(authError){
+    authError.textContent = "";
+  }
+}
+
+function updateAuthUI(){
+  if(!authArea) return;
+
+  const user = Auth.user();
+
+  if(!user){
+    authArea.innerHTML = `
+      <button
+        class="btn btn-ghost"
+        type="button"
+        id="accountBtn"
+      >
+        👤 Account
+      </button>
+    `;
+
+    document.getElementById("accountBtn")?.addEventListener(
+      "click",
+      () => openAuth("login")
+    );
+
+    return;
+  }
+
+  const email = user.email || "Account";
+  const initial = email.charAt(0).toUpperCase();
+
+  authArea.innerHTML = `
+    <div class="account-chip">
+      <div class="account-avatar">
+        ${escapeHtml(initial)}
+      </div>
+
+      <span>
+        ${escapeHtml(email)}
+      </span>
+
+      <button
+        type="button"
+        class="btn btn-ghost"
+        id="myItemsBtn"
+      >
+        My Items
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-ghost"
+        id="logoutBtn"
+      >
+        Logout
+      </button>
+    </div>
+  `;
+
+  document.getElementById("logoutBtn")?.addEventListener(
+    "click",
+    logout
+  );
+
+  document.getElementById("myItemsBtn")?.addEventListener(
+    "click",
+    showMyItems
+  );
+}
+
+/* =========================================================
+   LOGIN
+   ========================================================= */
+
+document.getElementById("loginForm")?.addEventListener(
+  "submit",
+  async event => {
+    event.preventDefault();
+
+    if(authError){
+      authError.textContent = "";
+    }
+
+    const form = new FormData(event.target);
+    const email = form.get("email");
+    const password = form.get("password");
+    const button = document.getElementById("loginSubmitBtn");
+
+    try{
+      if(button){
+        button.disabled = true;
+        button.textContent = "Signing in...";
+      }
+
+      const data = await Api.login(email, password);
+
+      if(!data.access_token){
+        throw new Error(
+          data.message || "Login failed."
+        );
+      }
+
+      Auth.set({
+        access_token: data.access_token,
+        user: data.user
+      });
+
+      closeAuth();
+      updateAuthUI();
+
+      toast("Welcome back! 👋", "success");
+
+    }catch(error){
+      console.error("LOGIN ERROR:", error);
+
+      if(authError){
+        authError.textContent =
+          error.message || "Could not sign in.";
+      }
+
+    }finally{
+      if(button){
+        button.disabled = false;
+        button.textContent = "Sign in";
+      }
+    }
+  }
+);
+
+/* =========================================================
+   SIGN UP
+   ========================================================= */
+
+document.getElementById("signupForm")?.addEventListener(
+  "submit",
+  async event => {
+    event.preventDefault();
+
+    if(authError){
+      authError.textContent = "";
+    }
+
+    const form = new FormData(event.target);
+    const email = form.get("email");
+    const password = form.get("password");
+    const button = document.getElementById("signupSubmitBtn");
+
+    try{
+      if(button){
+        button.disabled = true;
+        button.textContent = "Creating...";
+      }
+
+      const data = await Api.signup(email, password);
+
+      if(data.access_token){
+        Auth.set({
+          access_token: data.access_token,
+          user: data.user
+        });
+
+        closeAuth();
+        updateAuthUI();
+
+        toast("Account created! 🎉", "success");
+      }else{
+        if(authError){
+          authError.textContent =
+            data.message ||
+            "Account created. Please check your email to confirm it.";
+        }
+      }
+
+    }catch(error){
+      console.error("SIGNUP ERROR:", error);
+
+      if(authError){
+        authError.textContent =
+          error.message || "Could not create account.";
+      }
+
+    }finally{
+      if(button){
+        button.disabled = false;
+        button.textContent = "Create account";
+      }
+    }
+  }
+);
+
+/* =========================================================
+   AUTH TABS
+   ========================================================= */
+
+document.querySelectorAll("#authTabs button").forEach(button => {
+  button.addEventListener("click", () => {
+    openAuth(button.dataset.v);
+  });
+});
+
+/* =========================================================
+   LOGOUT
+   ========================================================= */
+
+function logout(){
+  Auth.clear();
+  updateAuthUI();
+  toast("You have been logged out.", "success");
+}
+
+/* =========================================================
+   MY ITEMS
+   ========================================================= */
+
+async function showMyItems(){
+  if(!Auth.user()){
+    openAuth("login");
+    return;
+  }
+
+  try{
+    const items = await Api.listMyItems();
+
+    state.items = Array.isArray(items) ? items : [];
+
+    renderGrid(state.items);
+    updateStats(state.items);
+
+    toast(
+      state.items.length
+        ? `Showing your ${state.items.length} item${state.items.length === 1 ? "" : "s"}.`
+        : "You haven't reported any items yet.",
+      state.items.length ? "success" : ""
+    );
+
+  }catch(error){
+    console.error("MY ITEMS ERROR:", error);
+
+    toast(
+      error.message || "Could not load your items.",
+      "error"
+    );
+  }
+}
+
+/* =========================================================
+   REQUIRE LOGIN FOR REPORTING
+   ========================================================= */
+
+const originalOpenReport = openReport;
+
+openReport = function(type = "lost"){
+  if(!Auth.user()){
+    openAuth("login");
+    toast("Please sign in before reporting an item.", "error");
+    return;
+  }
+
+  originalOpenReport(type);
+};
+
+/* =========================================================
+   CLOSE AUTH MODAL
+   ========================================================= */
+
+document.querySelectorAll("#authOverlay [data-close]").forEach(button => {
+  button.addEventListener("click", closeAuth);
+});
+
+authOverlay?.addEventListener("click", event => {
+  if(event.target === authOverlay){
+    closeAuth();
+  }
+});
+
+/* =========================================================
+   RESTORE ACCOUNT AFTER REFRESH
+   ========================================================= */
+
+updateAuthUI();
 
 
 /* =========================================================
