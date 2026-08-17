@@ -1,3 +1,4 @@
 Flask
 supabase
 gunicorn
+python-dotenv

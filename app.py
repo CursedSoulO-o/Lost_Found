@@ -3,6 +3,20 @@ from supabase import create_client, Client
 from functools import wraps
 import os
 
+try:
+    from dotenv import load_dotenv
+
+    # Local dev: Vercel deploys inject env vars automatically, but
+    # running `python app.py` locally needs them loaded from a .env
+    # file ourselves. Try .env.local first (what the Vercel CLI
+    # writes), then fall back to a plain .env.
+    load_dotenv(".env.local")
+    load_dotenv()
+except ImportError:
+    # python-dotenv isn't installed (e.g. on Vercel, where it's not
+    # needed) -- environment variables are expected to already be set.
+    pass
+
 app = Flask(__name__)
 
 
@@ -21,7 +35,10 @@ SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY") or SUPABASE_KEY
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError(
-        "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variable."
+        "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variable. "
+        "Add them to .env.local (SUPABASE_URL=... and "
+        "SUPABASE_SERVICE_ROLE_KEY=...) for local development, or set them "
+        "in your Vercel project's Environment Variables for deployment."
     )
 
 # Service-role client: used for all data reads/writes (bypasses RLS).
