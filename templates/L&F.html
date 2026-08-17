@@ -613,6 +613,12 @@ header.site{
   color:var(--found-green);
 }
 
+.pin-tag.claimed .tag-status{
+  background:rgba(28,43,51,.1);
+  color:var(--ink-soft);
+  text-decoration:line-through;
+}
+
 .pin-tag h4{
   margin-top:10px;
 }
@@ -1933,7 +1939,7 @@ footer{
     </div>
 
 
-    <div class="pin-stage">
+    <div class="pin-stage" id="pinStage">
 
       <div class="pin-tag lost">
 
@@ -3585,6 +3591,70 @@ async function loadItems(){
 
 
 /* =========================================================
+   HERO PIN PREVIEW
+
+   Keeps the 3 "pinned" cards in the hero mockup in sync with the
+   actual latest reports on the board, instead of showing static
+   placeholder text. Always fetches its own unfiltered, newest-
+   first copy (the API already returns /api/items newest-first),
+   so it stays correct even while the board below is filtered or
+   searched. Only ever touches the hero markup -- never state.items
+   or the real board grid -- so it can't affect filtering, search,
+   or matching.
+   ========================================================= */
+
+async function refreshHeroPins(){
+
+  const stage =
+    document.getElementById("pinStage");
+
+  if(!stage) return;
+
+  try{
+
+    const items =
+      await Api.listItems({});
+
+    const latest =
+      Array.isArray(items)
+        ? items.slice(0, 3)
+        : [];
+
+    if(!latest.length) return;
+
+    stage.querySelectorAll(".pin-tag").forEach(
+      el => el.remove()
+    );
+
+    const cardsHtml =
+      latest.map(
+        item => `
+        <div class="pin-tag ${escapeHtml(item.status)}">
+          <span class="tag-status">${statusLabel(item.status)}</span>
+          <h4>${escapeHtml(item.title)}</h4>
+          <p>${escapeHtml(item.location || "Location unknown")}</p>
+        </div>
+      `
+      ).join("");
+
+    stage.insertAdjacentHTML(
+      "afterbegin",
+      cardsHtml
+    );
+
+  }catch(error){
+
+    console.error(
+      "HERO PIN REFRESH ERROR:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
    FILTERS
    ========================================================= */
 
@@ -3845,6 +3915,8 @@ reportForm.addEventListener(
           : 0;
 
       celebrateReport(matchCount);
+
+      refreshHeroPins();
 
       if(matchCount > 0){
         toast(
@@ -5026,6 +5098,7 @@ updateAuthUI();
    ========================================================= */
 
 loadItems();
+refreshHeroPins();
 
 </script>
 
