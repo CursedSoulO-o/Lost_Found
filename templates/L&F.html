@@ -1812,10 +1812,6 @@ footer{
     display:none;
   }
 
-  .hero-float-bg{
-    display:none;
-  }
-
   .two-col .form-row,
   .detail-grid div{
     flex-basis:100%;
@@ -1823,6 +1819,20 @@ footer{
 
   .tag-card{
     max-width:100%;
+  }
+}
+
+/* The floating hero emoji are positioned with percentage left/right
+   offsets meant for the full-width desktop hero. Once the viewport
+   is narrower than the hero's own max-width (1180px + padding), those
+   percentages drift toward the edges and the icons end up clipped by
+   the viewport and/or overlapping the pin-stage cards -- so they're
+   hidden any time the page hasn't reached that full-width layout,
+   not just below the pin-stage breakpoint above. */
+@media(max-width:1236px){
+
+  .hero-float-bg{
+    display:none;
   }
 }
 
