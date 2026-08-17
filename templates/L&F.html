@@ -1388,10 +1388,13 @@ footer{
 /* =========================================================
    SUCCESS CELEBRATION FX
 
-   Fires after a report is saved -- a quick stamp + confetti pop.
-   Non-interactive overlay (pointer-events:none) that clears
-   itself on a timer -- it never blocks or reads anything the app
-   depends on.
+   A brief (2s), full-screen popup fired right after a report is
+   saved as LOST or FOUND, or a claim is submitted as CLAIMED --
+   status-tinted via a modifier class (.status-lost / .status-found
+   / .status-claimed) so the wash color and stamp match what just
+   happened. Non-interactive overlay (pointer-events:none) that
+   clears itself on a timer -- it never blocks or reads anything
+   the app depends on.
    ========================================================= */
 
 .success-fx{
@@ -1406,47 +1409,70 @@ footer{
 
   pointer-events:none;
 
+  background:radial-gradient(circle at 50% 45%, rgba(28,43,51,.5), rgba(20,24,27,.72));
+  backdrop-filter:blur(2px);
+
   opacity:0;
   visibility:hidden;
 
-  transition:opacity .3s ease, visibility 0s linear .3s;
+  transition:opacity .35s ease, visibility 0s linear .35s;
 }
 
 .success-fx.show{
   opacity:1;
   visibility:visible;
 
-  transition:opacity .2s ease;
+  transition:opacity .25s ease;
 }
 
 .success-fx-burst{
-  display:none;
-}
-
-.success-fx.burst-mode .success-fx-burst{
-  display:block;
   position:relative;
 }
 
 .success-fx-stamp{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+
   background:var(--card);
-  border:3px solid var(--found-green);
+  border:4px solid var(--found-green);
   color:var(--found-green);
 
   font-family:var(--font-mono);
   font-weight:800;
-  font-size:20px;
-  letter-spacing:.08em;
+  font-size:30px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
 
-  padding:14px 26px;
-  border-radius:10px;
+  padding:26px 46px;
+  border-radius:14px;
 
-  box-shadow:0 10px 30px rgba(0,0,0,.18);
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
 
   opacity:0;
 }
 
-.success-fx.burst-mode.show .success-fx-stamp{
+.success-fx-check{
+  font-size:34px;
+}
+
+.success-fx.status-lost .success-fx-stamp{
+  border-color:var(--stamp-red);
+  color:var(--stamp-red);
+}
+
+.success-fx.status-found .success-fx-stamp{
+  border-color:var(--found-green);
+  color:var(--found-green);
+}
+
+.success-fx.status-claimed .success-fx-stamp{
+  border-color:var(--gold);
+  color:var(--gold);
+}
+
+.success-fx.show .success-fx-stamp{
   animation:stampThump .6s cubic-bezier(.2,.8,.2,1) both;
 }
 
@@ -1455,33 +1481,33 @@ footer{
   top:50%;
   left:50%;
 
-  width:8px;
-  height:8px;
+  width:9px;
+  height:9px;
   border-radius:2px;
 
   opacity:0;
 }
 
-.success-fx.burst-mode.show .confetti-bit{
-  animation:confettiBurst .9s cubic-bezier(.2,.7,.3,1) both;
+.success-fx.show .confetti-bit{
+  animation:confettiBurst 1s cubic-bezier(.2,.7,.3,1) both;
 }
 
-.confetti-bit:nth-child(2){ --tx:-70px; --ty:-46px; background:var(--gold);        animation-delay:.02s; }
-.confetti-bit:nth-child(3){ --tx:64px;  --ty:-58px; background:var(--stamp-red);   animation-delay:.05s; }
-.confetti-bit:nth-child(4){ --tx:-88px; --ty:10px;  background:var(--found-green); animation-delay:.01s; }
-.confetti-bit:nth-child(5){ --tx:86px;  --ty:6px;   background:var(--gold);        animation-delay:.07s; }
-.confetti-bit:nth-child(6){ --tx:-56px; --ty:60px;  background:var(--stamp-red);   animation-delay:.03s; }
-.confetti-bit:nth-child(7){ --tx:60px;  --ty:64px;  background:var(--found-green); animation-delay:.06s; }
-.confetti-bit:nth-child(8){ --tx:-20px; --ty:-80px; background:var(--stamp-red);   animation-delay:.04s; }
-.confetti-bit:nth-child(9){ --tx:22px;  --ty:-82px; background:var(--gold);        animation-delay:.08s; }
-.confetti-bit:nth-child(10){ --tx:-96px;--ty:-16px; background:var(--found-green); animation-delay:.02s; }
-.confetti-bit:nth-child(11){ --tx:96px; --ty:-14px; background:var(--stamp-red);   animation-delay:.05s; }
-.confetti-bit:nth-child(12){ --tx:0px;  --ty:92px;  background:var(--gold);        animation-delay:.03s; }
-.confetti-bit:nth-child(13){ --tx:-40px;--ty:88px;  background:var(--found-green); animation-delay:.07s; }
+.confetti-bit:nth-child(2){ --tx:-110px; --ty:-70px;  background:var(--gold);        animation-delay:.02s; }
+.confetti-bit:nth-child(3){ --tx:100px;  --ty:-90px;  background:var(--stamp-red);   animation-delay:.05s; }
+.confetti-bit:nth-child(4){ --tx:-140px; --ty:16px;   background:var(--found-green); animation-delay:.01s; }
+.confetti-bit:nth-child(5){ --tx:135px;  --ty:10px;   background:var(--gold);        animation-delay:.07s; }
+.confetti-bit:nth-child(6){ --tx:-88px;  --ty:94px;   background:var(--stamp-red);   animation-delay:.03s; }
+.confetti-bit:nth-child(7){ --tx:94px;   --ty:100px;  background:var(--found-green); animation-delay:.06s; }
+.confetti-bit:nth-child(8){ --tx:-32px;  --ty:-125px; background:var(--stamp-red);   animation-delay:.04s; }
+.confetti-bit:nth-child(9){ --tx:35px;   --ty:-130px; background:var(--gold);        animation-delay:.08s; }
+.confetti-bit:nth-child(10){ --tx:-150px;--ty:-24px;  background:var(--found-green); animation-delay:.02s; }
+.confetti-bit:nth-child(11){ --tx:150px; --ty:-22px;  background:var(--stamp-red);   animation-delay:.05s; }
+.confetti-bit:nth-child(12){ --tx:0px;   --ty:145px;  background:var(--gold);        animation-delay:.03s; }
+.confetti-bit:nth-child(13){ --tx:-62px; --ty:138px;  background:var(--found-green); animation-delay:.07s; }
 
 @keyframes confettiBurst{
   0%{ transform:translate(-50%,-50%) scale(0) rotate(0deg); opacity:1; }
-  70%{ opacity:1; }
+  65%{ opacity:1; }
   100%{ transform:translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1) rotate(200deg); opacity:0; }
 }
 
@@ -2548,21 +2574,26 @@ footer{
 <div class="success-fx" id="successFx" aria-hidden="true">
 
   <div class="success-fx-burst">
-    <div class="success-fx-stamp">LOGGED &#10003;</div>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-    <span class="confetti-bit"></span>
-  </div>
 
+    <div class="success-fx-stamp">
+      <span id="successFxLabel">LOGGED</span>
+      <span class="success-fx-check">&#10003;</span>
+    </div>
+
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+    <span class="confetti-bit"></span>
+
+  </div>
 
 </div>
 
@@ -2604,7 +2635,6 @@ footer{
   revealEls.forEach(function(el){ observer.observe(el); });
 })();
 </script>
-
 <script>
 
 /* =========================================================
@@ -3312,25 +3342,32 @@ const SoundFX = {
 /* =========================================================
    SUCCESS CELEBRATION
 
-   Purely cosmetic feedback fired right after a report is saved --
-   a quick stamp + confetti burst. (There used to also be a
-   "match found" LOST -> SEARCHING -> MATCH FOUND -> FOUND
-   sequence animation here; that's been removed, but the match
-   toast/notification below is untouched.) It only ever
-   adds/removes CSS classes on the #successFx overlay (which the
-   app never reads from) and clears itself on a timer, so it
-   can't affect auth/items/matching/notifications state.
+   Full-screen, 2-second popup fired right after a report is
+   saved as LOST or FOUND, or a claim is submitted (CLAIMED).
+   status picks the color theme (.status-lost/.status-found/
+   .status-claimed in CSS); label is the word shown on the stamp.
+   It only ever adds/removes CSS classes on the #successFx
+   overlay (which the app never reads from) and clears itself on
+   a timer, so it can't affect auth/items/matching/notifications
+   state.
    ========================================================= */
 
-function celebrateReport(){
+function celebrateStatus(status, label){
 
   const fx =
     document.getElementById("successFx");
 
   if(!fx) return;
 
+  const labelEl =
+    document.getElementById("successFxLabel");
+
+  if(labelEl){
+    labelEl.textContent = label;
+  }
+
   fx.classList.remove(
-    "show", "burst-mode"
+    "show", "status-lost", "status-found", "status-claimed"
   );
 
   // Force reflow so re-triggering the animation on a second
@@ -3338,7 +3375,7 @@ function celebrateReport(){
   void fx.offsetWidth;
 
   fx.classList.add(
-    "burst-mode"
+    "status-" + status
   );
 
   fx.classList.add("show");
@@ -3347,9 +3384,9 @@ function celebrateReport(){
 
   window.setTimeout(
     () => fx.classList.remove(
-      "show", "burst-mode"
+      "show", "status-lost", "status-found", "status-claimed"
     ),
-    1500
+    2000
   );
 
 }
@@ -4055,7 +4092,10 @@ reportForm.addEventListener(
           ? created.matches.length
           : 0;
 
-      celebrateReport();
+      celebrateStatus(
+        payload.status,
+        payload.status === "found" ? "Found" : "Lost"
+      );
 
       refreshHeroPins();
 
@@ -4429,6 +4469,8 @@ function renderDetail(item){
           "Item marked as claimed! 🎉",
           "success"
         );
+
+        celebrateStatus("claimed", "Claimed");
 
 
         closeDetail();
